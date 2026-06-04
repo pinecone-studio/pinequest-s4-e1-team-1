@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { process } from '../controllers/processController';
+import { processEntry } from '../controllers/processController';
 
 const router = Router();
-router.post('/', process);
+router.post('/', processEntry);
 export default router;
