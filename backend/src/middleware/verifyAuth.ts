@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import admin from '../firebaseAdmin';
 
 export async function verifyAuth(req: Request, res: Response, next: NextFunction) {
+  if (process.env.DEV_BYPASS_AUTH === 'true') {
+    req.uid = 'dev-user';
+    req.email = 'dev@local';
+    return next();
+  }
   if (!admin.apps.length) {
     return res.status(503).json({ error: 'Auth not configured (missing Firebase credentials)' });
   }

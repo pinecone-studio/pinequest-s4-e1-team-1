@@ -33,9 +33,26 @@ export async function saveEntry(body: {
   return data;
 }
 
+export type TaskPriority = 'high' | 'medium' | 'low';
+export type Task = { _id: string; title: string; due: string; status: string; priority: TaskPriority; category: string };
+
 export async function fetchTasks() {
   const { data } = await api.get('/api/tasks');
-  return data as { _id: string; title: string; due: string; status: string }[];
+  return data as Task[];
+}
+
+export async function createTask(title: string, due = '', priority: TaskPriority = 'medium', category = '') {
+  const { data } = await api.post('/api/tasks', { title, due, priority, category });
+  return data as Task;
+}
+
+export async function updateTask(id: string, fields: { status?: 'pending' | 'done'; priority?: TaskPriority; category?: string }) {
+  const { data } = await api.patch(`/api/tasks/${id}`, fields);
+  return data as Task;
+}
+
+export async function deleteTask(id: string) {
+  await api.delete(`/api/tasks/${id}`);
 }
 
 export async function fetchReport(date: string) {

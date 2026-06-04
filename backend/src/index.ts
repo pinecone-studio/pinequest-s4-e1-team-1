@@ -27,7 +27,7 @@ app.use('/api/report', reportRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-const MONGODB_URI = process.env.MONGODB_URI || '';
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGODB_URL || '';
 
 mongoose
   .connect(MONGODB_URI)
