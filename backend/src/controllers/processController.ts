@@ -1,14 +1,18 @@
 import { Request, Response } from 'express';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let openai: OpenAI | null = null;
+const getOpenAI = () => {
+  if (!openai) openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  return openai;
+};
 
 export const processEntry = async (req: Request, res: Response) => {
   try {
     const { text } = req.body as { text: string };
     if (!text) return res.status(400).json({ error: 'text is required' });
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
