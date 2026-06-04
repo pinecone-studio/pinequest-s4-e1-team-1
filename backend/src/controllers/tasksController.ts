@@ -10,8 +10,10 @@ let mockIdCounter = 1;
 
 export const getTasks = async (req: Request, res: Response) => {
   try {
+    console.log('getTasks uid:', req.uid);
     if (!isDbReady()) return res.json(mockTasks.filter((t) => t.uid === req.uid).reverse());
     const tasks = await Task.find({ uid: req.uid }).sort({ _id: -1 });
+    console.log('tasks found:', tasks.length);
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
