@@ -1,11 +1,13 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import { API_BASE_URL } from './config';
 
 const api = axios.create({ baseURL: API_BASE_URL });
 
 export async function transcribeAudio(uri: string) {
   const form = new FormData();
-  form.append('audio', { uri, name: 'recording.m4a', type: 'audio/m4a' } as any);
+  const isIOS = Platform.OS === 'ios';
+  form.append('audio', { uri, name: isIOS ? 'recording.wav' : 'recording.m4a', type: isIOS ? 'audio/wav' : 'audio/m4a' } as any);
   const { data } = await api.post('/api/transcribe', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });

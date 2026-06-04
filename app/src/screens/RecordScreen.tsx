@@ -12,8 +12,32 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
   requestRecordingPermissionsAsync,
-  RecordingPresets,
+  setAudioModeAsync,
+  IOSOutputFormat,
+  AudioQuality,
 } from 'expo-audio';
+
+const CHIMEGE_PRESET = {
+  extension: '.wav',
+  sampleRate: 16000,
+  numberOfChannels: 1,
+  bitRate: 256000,
+  android: {
+    outputFormat: 'mpeg4' as const,
+    audioEncoder: 'aac' as const,
+  },
+  ios: {
+    outputFormat: IOSOutputFormat.LINEARPCM,
+    audioQuality: AudioQuality.MAX,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/webm',
+    bitsPerSecond: 128000,
+  },
+};
 import { transcribeAudio, processText, saveEntry } from '../api';
 
 type ProcessResult = {
@@ -23,7 +47,7 @@ type ProcessResult = {
 };
 
 export default function RecordScreen() {
-  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorder = useAudioRecorder(CHIMEGE_PRESET);
   const state = useAudioRecorderState(recorder);
   const [loading, setLoading] = useState(false);
   const [transcribed, setTranscribed] = useState('');
@@ -31,11 +55,13 @@ export default function RecordScreen() {
   const [permissionGranted, setPermissionGranted] = useState(false);
 
   useEffect(() => {
-    requestRecordingPermissionsAsync().then((status) => {
+    requestRecordingPermissionsAsync().then(async (status) => {
       setPermissionGranted(status.granted);
       if (!status.granted) {
         Alert.alert('Зөвшөөрөл хэрэгтэй', 'Микрофоны зөвшөөрөл өгнө үү.');
+        return;
       }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     });
   }, []);
 
