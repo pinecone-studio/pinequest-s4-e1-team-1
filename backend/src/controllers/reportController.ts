@@ -25,7 +25,7 @@ export const getReport = async (req: Request, res: Response) => {
     const end = new Date(date);
     end.setHours(23, 59, 59, 999);
 
-    const entries = await Entry.find({ createdAt: { $gte: start, $lte: end } });
+    const entries = await Entry.find({ uid: req.uid, createdAt: { $gte: start, $lte: end } });
 
     res.json({
       date,

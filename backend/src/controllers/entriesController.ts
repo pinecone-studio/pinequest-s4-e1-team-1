@@ -20,11 +20,11 @@ export const createEntry = async (req: Request, res: Response) => {
       return res.status(201).json({ _id: 'mock-id', text, tasks, events, summary, createdAt: new Date() });
     }
 
-    const entry = await Entry.create({ text, tasks, events, summary });
+    const entry = await Entry.create({ uid: req.uid, text, tasks, events, summary });
 
     if (tasks.length) {
       await Task.insertMany(
-        tasks.map((t) => ({ title: t.title, due: t.due, entryId: entry._id }))
+        tasks.map((t) => ({ uid: req.uid, title: t.title, due: t.due, entryId: entry._id }))
       );
     }
 
@@ -34,12 +34,12 @@ export const createEntry = async (req: Request, res: Response) => {
   }
 };
 
-export const getEntries = async (_req: Request, res: Response) => {
+export const getEntries = async (req: Request, res: Response) => {
   try {
     if (!isDbReady()) {
       return res.json([]);
     }
-    const entries = await Entry.find().sort({ createdAt: -1 });
+    const entries = await Entry.find({ uid: req.uid }).sort({ createdAt: -1 });
     res.json(entries);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

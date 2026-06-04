@@ -11,6 +11,7 @@ export interface IEvent {
 }
 
 export interface IEntry extends Document {
+  uid: string;
   text: string;
   tasks: ITask[];
   events: IEvent[];
@@ -20,6 +21,7 @@ export interface IEntry extends Document {
 
 const EntrySchema = new Schema<IEntry>(
   {
+    uid: { type: String, required: true, index: true },
     text: { type: String, required: true },
     tasks: [{ title: String, due: String }],
     events: [{ title: String, datetime: String }],
