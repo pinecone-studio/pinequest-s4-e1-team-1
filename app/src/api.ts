@@ -61,12 +61,18 @@ export async function deleteTask(id: string) {
   await api.delete(`/api/tasks/${id}`, { headers: await authHeader() });
 }
 
-export async function fetchReport(date: string) {
-  const { data } = await api.post('/api/report', { date }, { headers: await authHeader() });
+export type ReportPeriod = 'day' | 'week' | 'month';
+
+export async function fetchReport(date: string, period: ReportPeriod = 'day') {
+  const { data } = await api.post('/api/report', { date, period }, { headers: await authHeader() });
   return data as {
-    date: string;
+    period: ReportPeriod;
+    label: string;
+    startDate: string;
+    endDate: string;
     entryCount: number;
     taskCount: number;
+    completedTaskCount: number;
     eventCount: number;
     summary: string;
   };
