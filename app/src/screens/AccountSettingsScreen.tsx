@@ -12,8 +12,10 @@ import {
 import { Feather } from "expo-vector-icons";
 import { auth } from "../firebase";
 import { updateProfile, updatePassword } from "firebase/auth";
+import { useTheme } from "../theme/ThemeContext";
 
 export default function AccountSettingsScreen() {
+  const { colors: C } = useTheme();
   const user = auth.currentUser;
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email] = useState(user?.email || "");
@@ -23,7 +25,6 @@ export default function AccountSettingsScreen() {
 
   const handleUpdateProfile = async () => {
     if (!user) return;
-
     setLoading(true);
     try {
       if (displayName !== user.displayName) {
@@ -42,15 +43,10 @@ export default function AccountSettingsScreen() {
       Alert.alert("Анхааруулга", "Шинэ нууц үг оруулна уу");
       return;
     }
-
     if (newPassword.length < 6) {
-      Alert.alert(
-        "Анхааруулга",
-        "Нууц үг 6 эсвэл түүнээс дээш тэмдэгт байх ёстой",
-      );
+      Alert.alert("Анхааруулга", "Нууц үг 6 эсвэл түүнээс дээш тэмдэгт байх ёстой");
       return;
     }
-
     setLoading(true);
     try {
       await updatePassword(user, newPassword);
@@ -65,34 +61,34 @@ export default function AccountSettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Профайлын Мэдээлэл</Text>
+    <ScrollView style={[s.container, { backgroundColor: C.bg }]} contentContainerStyle={s.content}>
+      <View style={s.section}>
+        <Text style={[s.sectionTitle, { color: C.text }]}>Профайлын Мэдээлэл</Text>
 
-        <View style={styles.infoCard}>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Нэр</Text>
+        <View style={[s.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <View style={s.fieldGroup}>
+            <Text style={[s.label, { color: C.textSec }]}>Нэр</Text>
             <TextInput
-              style={styles.input}
+              style={[s.input, { backgroundColor: C.surfaceAlt, borderColor: C.border, color: C.text }]}
               placeholder="Таны нэр"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={C.textMuted}
               value={displayName}
               onChangeText={setDisplayName}
               editable={!loading}
             />
           </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>И-мэйл</Text>
-            <View style={styles.emailField}>
-              <Feather name="mail" size={18} color="#4f46e5" />
-              <Text style={styles.emailText}>{email}</Text>
+          <View style={s.fieldGroup}>
+            <Text style={[s.label, { color: C.textSec }]}>И-мэйл</Text>
+            <View style={[s.emailField, { backgroundColor: C.surfaceAlt, borderColor: C.border }]}>
+              <Feather name="mail" size={18} color={C.accent} />
+              <Text style={[s.emailText, { color: C.text }]}>{email}</Text>
             </View>
-            <Text style={styles.emailHint}>И-мэйл өөрчлөх боломжгүй</Text>
+            <Text style={[s.emailHint, { color: C.textMuted }]}>И-мэйл өөрчлөх боломжгүй</Text>
           </View>
 
           <TouchableOpacity
-            style={[styles.button, styles.primaryButton]}
+            style={[s.button, s.primaryButton, { backgroundColor: C.accent, borderColor: C.accent }]}
             onPress={handleUpdateProfile}
             disabled={loading}
           >
@@ -101,45 +97,43 @@ export default function AccountSettingsScreen() {
             ) : (
               <>
                 <Feather name="save" size={18} color="#fff" />
-                <Text style={styles.buttonText}>Хадгалах</Text>
+                <Text style={s.buttonText}>Хадгалах</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Нууц үг</Text>
+      <View style={s.section}>
+        <Text style={[s.sectionTitle, { color: C.text }]}>Нууц үг</Text>
 
         {!showPasswordField ? (
           <TouchableOpacity
-            style={[styles.button, styles.secondaryButton]}
+            style={[s.button, s.secondaryButton, { backgroundColor: C.surface, borderColor: C.border }]}
             onPress={() => setShowPasswordField(true)}
             disabled={loading}
           >
-            <Text style={styles.secondaryButtonText}>Нууц үг өөрчлөх</Text>
+            <Text style={[s.secondaryButtonText, { color: C.accent }]}>Нууц үг өөрчлөх</Text>
           </TouchableOpacity>
         ) : (
-          <View style={styles.infoCard}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Шинэ Нууц үг</Text>
+          <View style={[s.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+            <View style={s.fieldGroup}>
+              <Text style={[s.label, { color: C.textSec }]}>Шинэ Нууц үг</Text>
               <TextInput
-                style={styles.input}
+                style={[s.input, { backgroundColor: C.surfaceAlt, borderColor: C.border, color: C.text }]}
                 placeholder="6+ тэмдэгт"
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor={C.textMuted}
                 secureTextEntry
                 value={newPassword}
                 onChangeText={setNewPassword}
                 editable={!loading}
               />
-              <Text style={styles.hint}>
-                6 эсвэл түүнээс дээш тэмдэгт байх ёстой
-              </Text>
+              <Text style={[s.hint, { color: C.textMuted }]}>6 эсвэл түүнээс дээш тэмдэгт байх ёстой</Text>
             </View>
 
-            <View style={styles.buttonGroup}>
+            <View style={s.buttonGroup}>
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton, { flex: 1 }]}
+                style={[s.button, s.primaryButton, { flex: 1, backgroundColor: C.accent, borderColor: C.accent }]}
                 onPress={handleChangePassword}
                 disabled={loading}
               >
@@ -148,204 +142,77 @@ export default function AccountSettingsScreen() {
                 ) : (
                   <>
                     <Feather name="check" size={18} color="#fff" />
-                    <Text style={styles.buttonText}>Хадгалах</Text>
+                    <Text style={s.buttonText}>Хадгалах</Text>
                   </>
                 )}
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton, { flex: 1 }]}
-                onPress={() => {
-                  setShowPasswordField(false);
-                  setNewPassword("");
-                }}
+                style={[s.button, s.cancelButton, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}
+                onPress={() => { setShowPasswordField(false); setNewPassword(""); }}
                 disabled={loading}
               >
-                <Feather name="x" size={18} color="#6b7280" />
-                <Text style={styles.cancelButtonText}>Болих</Text>
+                <Feather name="x" size={18} color={C.textSec} />
+                <Text style={[s.cancelButtonText, { color: C.textSec }]}>Болих</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Бүртгэлийн Мэдээлэл</Text>
-        <View style={styles.infoList}>
-          <InfoRow
-            icon="calendar"
-            label="Бүртгэлийн Огноо"
-            value={
-              user?.metadata?.creationTime
-                ? new Date(user.metadata.creationTime).toLocaleDateString(
-                    "mn-MN",
-                  )
-                : "Үл мэдэгдэх"
-            }
-          />
-          <InfoRow
-            icon="check-circle"
-            label="И-мэйл Баталгаажаа"
-            value={user?.emailVerified ? "Баталгаажсан" : "Баталгаажаагүй"}
-          />
+      <View style={s.section}>
+        <Text style={[s.sectionTitle, { color: C.text }]}>Бүртгэлийн Мэдээлэл</Text>
+        <View style={[s.infoList, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <InfoRow icon="calendar" label="Бүртгэлийн Огноо" value={
+            user?.metadata?.creationTime
+              ? new Date(user.metadata.creationTime).toLocaleDateString("mn-MN")
+              : "Үл мэдэгдэх"
+          } colors={C} />
+          <InfoRow icon="check-circle" label="И-мэйл Баталгаажаа" value={user?.emailVerified ? "Баталгаажсан" : "Баталгаажаагүй"} colors={C} />
         </View>
       </View>
     </ScrollView>
   );
 }
 
-function InfoRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
+type ColorsArg = ReturnType<typeof useTheme>['colors'];
+
+function InfoRow({ icon, label, value, colors: C }: { icon: string; label: string; value: string; colors: ColorsArg }) {
   return (
-    <View style={styles.infoRow}>
-      <View style={styles.infoRowLeft}>
-        <Feather name={icon as any} size={18} color="#4f46e5" />
-        <Text style={styles.infoLabel}>{label}</Text>
+    <View style={[s.infoRow, { borderBottomColor: C.border }]}>
+      <View style={s.infoRowLeft}>
+        <Feather name={icon as any} size={18} color={C.accent} />
+        <Text style={[s.infoLabel, { color: C.text }]}>{label}</Text>
       </View>
-      <Text style={styles.infoValue}>{value}</Text>
+      <Text style={[s.infoValue, { color: C.textSec }]}>{value}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
+const s = StyleSheet.create({
+  container: { flex: 1 },
   content: { padding: 24, paddingBottom: 32 },
   section: { marginBottom: 28 },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111",
-    marginBottom: 12,
-  },
-  infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    padding: 16,
-  },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12 },
+  infoCard: { borderRadius: 12, borderWidth: 1, padding: 16 },
   fieldGroup: { marginBottom: 16 },
-  label: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6b7280",
-    marginBottom: 6,
-    textTransform: "uppercase",
-  },
-  input: {
-    backgroundColor: "#f9fafb",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
-    color: "#111",
-  },
-  emailField: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f9fafb",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  emailText: {
-    fontSize: 14,
-    color: "#111",
-  },
-  emailHint: {
-    fontSize: 11,
-    color: "#9ca3af",
-    marginTop: 6,
-  },
-  hint: {
-    fontSize: 11,
-    color: "#9ca3af",
-    marginTop: 6,
-  },
-  button: {
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  primaryButton: {
-    backgroundColor: "#4f46e5",
-    borderWidth: 1,
-    borderColor: "#4f46e5",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  secondaryButtonText: {
-    color: "#4f46e5",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  cancelButton: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  cancelButtonText: {
-    color: "#6b7280",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  buttonGroup: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  infoList: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    overflow: "hidden",
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
-  infoRowLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
-  },
-  infoValue: {
-    fontSize: 13,
-    color: "#6b7280",
-  },
+  label: { fontSize: 12, fontWeight: "600", marginBottom: 6, textTransform: "uppercase" },
+  input: { borderRadius: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14 },
+  emailField: { flexDirection: "row", alignItems: "center", borderRadius: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 12, gap: 8 },
+  emailText: { fontSize: 14 },
+  emailHint: { fontSize: 11, marginTop: 6 },
+  hint: { fontSize: 11, marginTop: 6 },
+  button: { borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  primaryButton: { borderWidth: 1 },
+  buttonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  secondaryButton: { borderWidth: 1 },
+  secondaryButtonText: { fontSize: 14, fontWeight: "600" },
+  cancelButton: { borderWidth: 1 },
+  cancelButtonText: { fontSize: 14, fontWeight: "600" },
+  buttonGroup: { flexDirection: "row", gap: 8 },
+  infoList: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
+  infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1 },
+  infoRowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  infoLabel: { fontSize: 14, fontWeight: "600" },
+  infoValue: { fontSize: 13 },
 });
