@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { fetchReport } from '@/lib/api';
+import { useState } from "react";
+import { fetchReport } from "@/lib/api";
+import { Header } from "@/components/Header";
 
 type Report = {
   date: string;
@@ -12,18 +13,18 @@ type Report = {
 };
 
 function todayISO() {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 export default function ReportPage() {
   const [date, setDate] = useState(todayISO());
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
+    setError("");
     setReport(null);
     setLoading(true);
     try {
@@ -31,7 +32,7 @@ export default function ReportPage() {
       setReport(data);
     } catch (err: unknown) {
       const msg =
-        err instanceof Error ? err.message : 'Тайлан татахад алдаа гарлаа.';
+        err instanceof Error ? err.message : "Тайлан татахад алдаа гарлаа.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -67,7 +68,7 @@ export default function ReportPage() {
           disabled={loading}
           className="shrink-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors"
         >
-          {loading ? 'Татаж байна...' : 'Харах'}
+          {loading ? "Татаж байна..." : "Харах"}
         </button>
       </form>
 
@@ -81,8 +82,16 @@ export default function ReportPage() {
         <div className="mt-6 flex flex-col gap-4">
           <div className="grid grid-cols-3 gap-3">
             <StatCard label="Бичлэг" value={report.entryCount} color="indigo" />
-            <StatCard label="Даалгавар" value={report.taskCount} color="green" />
-            <StatCard label="Цаг товлол" value={report.eventCount} color="blue" />
+            <StatCard
+              label="Даалгавар"
+              value={report.taskCount}
+              color="green"
+            />
+            <StatCard
+              label="Цаг товлол"
+              value={report.eventCount}
+              color="blue"
+            />
           </div>
 
           {report.summary && (
@@ -108,12 +117,12 @@ function StatCard({
 }: {
   label: string;
   value: number;
-  color: 'indigo' | 'green' | 'blue';
+  color: "indigo" | "green" | "blue";
 }) {
   const colors = {
-    indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
-    green: 'bg-green-50 text-green-600 border-green-100',
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
+    indigo: "bg-indigo-50 text-indigo-600 border-indigo-100",
+    green: "bg-green-50 text-green-600 border-green-100",
+    blue: "bg-blue-50 text-blue-600 border-blue-100",
   };
   return (
     <div

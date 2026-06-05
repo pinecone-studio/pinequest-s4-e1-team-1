@@ -1,205 +1,117 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { transcribeAudio, processText, saveEntry } from '@/lib/api';
+import { useEffect, useState } from 'react';
+import { fetchTasks, fetchReport, updateTask, BackendTask } from '@/lib/api';
+import { Plus } from 'lucide-react';
+import StatsRow from '@/components/dashboard/StatsRow';
+import TodaySection, { Task } from '@/components/dashboard/TodaySection';
+import SidePanel, { UpcomingTask } from '@/components/dashboard/SidePanel';
+import AddReminderModal from '@/components/dashboard/AddReminderModal';
 
-type ProcessResult = {
-  tasks: { title: string; due: string }[];
-  events: { title: string; datetime: string }[];
-  summary: string;
-};
+const today = new Date().toISOString().slice(0, 10);
 
-type Status = 'idle' | 'recording' | 'processing' | 'done' | 'error';
+function toFrontendTask(t: BackendTask): Task {
+  return {
+    id: t._id,
+    title: t.title,
+    description: null,
+    time: t.due ? t.due.slice(11, 16) || t.due.slice(0, 10) : '—',
+    priority: t.priority === 'high' ? 'High' : 'Medium',
+    category: t.category || 'Ерөнхий',
+    completed: t.status === 'done',
+  };
+}
+
+function toUpcomingTask(t: BackendTask): UpcomingTask {
+  const date = new Date(t.due);
+  const label = isNaN(date.getTime())
+    ? t.due
+    : date.toLocaleDateString('mn-MN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return { id: t._id, title: t.title, datetime: label };
+}
 
 export default function HomePage() {
-  const [status, setStatus] = useState<Status>('idle');
-  const [result, setResult] = useState<ProcessResult | null>(null);
-  const [transcript, setTranscript] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
+  const [raw, setRaw] = useState<BackendTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [insight, setInsight] = useState('');
+  const [insightLoading, setInsightLoading] = useState(true);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  useEffect(() => {
+    fetchTasks()
+      .then(setRaw)
+      .catch(() => setError('Даалгаврыг татахад алдаа гарлаа.'))
+      .finally(() => setLoading(false));
 
-  async function startRecording() {
-    setErrorMsg('');
-    setResult(null);
-    setTranscript('');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setStatus('recording');
-    } catch {
-      setErrorMsg('Микрофоны зөвшөөрөл олгоно уу.');
-      setStatus('error');
-    }
+    fetchReport(today)
+      .then((r) => setInsight(r.summary ?? ''))
+      .catch(() => setInsight(''))
+      .finally(() => setInsightLoading(false));
+  }, []);
+
+  async function toggleTask(id: string, completed: boolean) {
+    const status = completed ? 'done' : 'pending';
+    const updated = await updateTask(id, { status });
+    setRaw((prev) => prev.map((t) => (t._id === id ? updated : t)));
   }
 
-  async function stopRecording() {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder) return;
+  const todayTasks = raw
+    .filter((t) => !t.due || t.due.startsWith(today))
+    .map(toFrontendTask);
 
-    setStatus('processing');
+  const upcomingTasks: UpcomingTask[] = raw
+    .filter((t) => t.due && t.due > today && t.status !== 'done')
+    .sort((a, b) => a.due.localeCompare(b.due))
+    .slice(0, 5)
+    .map(toUpcomingTask);
 
-    await new Promise<void>((resolve) => {
-      recorder.onstop = () => resolve();
-      recorder.stop();
-      recorder.stream.getTracks().forEach((t) => t.stop());
-    });
+  const statsData = raw.map((t) => ({ completed: t.status === 'done' }));
 
-    try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-
-      const { text } = await transcribeAudio(blob);
-      setTranscript(text);
-
-      const processed = await processText(text);
-      setResult(processed);
-
-      await saveEntry({ text, ...processed });
-
-      setStatus('done');
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Алдаа гарлаа.';
-      setErrorMsg(msg);
-      setStatus('error');
-    }
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-400 text-sm">Ачааллаж байна...</p>
+      </div>
+    );
   }
-
-  const isRecording = status === 'recording';
-  const isProcessing = status === 'processing';
 
   return (
-    <div className="flex flex-col flex-1 items-center justify-center gap-8 px-4 py-12">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-800">Дуу бичлэг</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {isRecording
-            ? 'Бичиж байна...'
-            : isProcessing
-            ? 'Боловсруулж байна...'
-            : 'Товч дарж бичиж эхлэх'}
-        </p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Хяналтын самбар</h1>
+            <p className="text-sm text-gray-500 mt-1">Өнөөдрийн даалгаврын тойм</p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus size={16} />
+            Сануулагч нэмэх
+          </button>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        <StatsRow tasks={statsData} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+          <TodaySection tasks={todayTasks} onToggle={toggleTask} />
+          <SidePanel upcoming={upcomingTasks} insight={insight} insightLoading={insightLoading} />
+        </div>
       </div>
 
-      <button
-        onClick={isRecording ? stopRecording : startRecording}
-        disabled={isProcessing}
-        aria-label={isRecording ? 'Зогсоох' : 'Бичих'}
-        className={`relative w-32 h-32 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-offset-2
-          ${
-            isRecording
-              ? 'bg-red-500 hover:bg-red-600 focus:ring-red-300 scale-110'
-              : isProcessing
-              ? 'bg-gray-300 cursor-not-allowed'
-              : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105 focus:ring-indigo-300'
-          }`}
-      >
-        {isProcessing ? (
-          <svg
-            className="w-10 h-10 text-white animate-spin"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v8H4z"
-            />
-          </svg>
-        ) : isRecording ? (
-          <span className="w-10 h-10 bg-white rounded-sm" />
-        ) : (
-          <svg
-            className="w-14 h-14 text-white"
-            fill="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path d="M12 1a4 4 0 014 4v7a4 4 0 01-8 0V5a4 4 0 014-4zm0 2a2 2 0 00-2 2v7a2 2 0 004 0V5a2 2 0 00-2-2zm-7 9a1 1 0 012 0 5 5 0 0010 0 1 1 0 012 0 7 7 0 01-6 6.92V21h2a1 1 0 010 2H9a1 1 0 010-2h2v-2.08A7 7 0 015 12z" />
-          </svg>
-        )}
-        {isRecording && (
-          <span className="absolute inset-0 rounded-full bg-red-400 opacity-40 animate-ping" />
-        )}
-      </button>
-
-      {status === 'error' && (
-        <div className="w-full max-w-md bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
-          {errorMsg}
-        </div>
-      )}
-
-      {transcript && (
-        <div className="w-full max-w-md bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-1">
-            Бичлэг
-          </p>
-          <p className="text-gray-700 text-sm leading-relaxed">{transcript}</p>
-        </div>
-      )}
-
-      {result && status === 'done' && (
-        <div className="w-full max-w-md flex flex-col gap-4">
-          {result.summary && (
-            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-              <p className="text-xs font-semibold text-indigo-400 uppercase mb-1">
-                Хураангуй
-              </p>
-              <p className="text-indigo-800 text-sm">{result.summary}</p>
-            </div>
-          )}
-
-          {result.tasks.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                Даалгавар ({result.tasks.length})
-              </p>
-              <ul className="flex flex-col gap-2">
-                {result.tasks.map((t, i) => (
-                  <li key={i} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{t.title}</span>
-                    {t.due && (
-                      <span className="text-gray-400 text-xs">{t.due}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {result.events.length > 0 && (
-            <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-              <p className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                Цаг товлол ({result.events.length})
-              </p>
-              <ul className="flex flex-col gap-2">
-                {result.events.map((e, i) => (
-                  <li key={i} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{e.title}</span>
-                    {e.datetime && (
-                      <span className="text-gray-400 text-xs">
-                        {e.datetime}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+      {showModal && (
+        <AddReminderModal
+          onClose={() => setShowModal(false)}
+          onCreated={(task) => setRaw((prev) => [task, ...prev])}
+        />
       )}
     </div>
   );
