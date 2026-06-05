@@ -1,21 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { fetchReport, ReportPeriod, ReportType } from '../api';
-import { styles } from './ReportScreenStyles';
+import ReportGeneralCard from './ReportGeneralCard';
+import ReportWorkCard from './ReportWorkCard';
 
-type Report = {
-  period: ReportPeriod;
-  type: ReportType;
-  label: string;
-  startDate: string;
-  endDate: string;
-  entryCount: number;
-  taskCount: number;
-  completedTaskCount: number;
-  pendingTaskCount: number;
-  eventCount: number;
-  summary: string;
-};
+type Report = Awaited<ReturnType<typeof fetchReport>>;
 
 const PERIODS: { key: ReportPeriod; label: string }[] = [
   { key: 'day', label: 'Өдөр' },
@@ -23,24 +12,9 @@ const PERIODS: { key: ReportPeriod; label: string }[] = [
   { key: 'month', label: '1 сар' },
 ];
 
-const SUMMARY_LABELS: Record<ReportPeriod, Record<ReportType, string>> = {
-  day:   { general: 'Таны өнөөдрийн дүгнэлт',    work: 'Таны өнөөдрийн ажлын тайлан' },
-  week:  { general: 'Таны 7 хоногийн үр дүн',     work: 'Таны 7 хоногийн ажлын тайлан' },
-  month: { general: 'Таны сарын үр дүн',          work: 'Таны сарын ажлын тайлан' },
-};
-
-function formatDate(iso: string) {
+function fmt(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <View style={styles.statCard}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
 }
 
 export default function ReportScreen() {
@@ -68,73 +42,89 @@ export default function ReportScreen() {
     setSelectedDate(d.toISOString().split('T')[0]);
   };
 
-  const dateRangeLabel = report
-    ? report.period === 'day'
-      ? formatDate(report.endDate)
-      : `${formatDate(report.startDate)} – ${formatDate(report.endDate)}`
-    : null;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Тайлан</Text>
+    <ScrollView style={s.root} contentContainerStyle={s.content}>
+      <Text style={s.pageTitle}>Тайлан</Text>
 
-      <View style={styles.typeToggle}>
+      {/* Type toggle */}
+      <View style={s.toggle}>
         {(['general', 'work'] as ReportType[]).map(t => (
           <TouchableOpacity
             key={t}
-            style={[styles.typeBtn, reportType === t && styles.typeBtnActive]}
+            style={[s.toggleBtn, reportType === t && s.toggleBtnActive]}
             onPress={() => { setReportType(t); setReport(null); }}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.typeBtnText, reportType === t && styles.typeBtnTextActive]}>
-              {t === 'general' ? 'Ерөнхий' : 'Ажлын'}
+            <Text style={[s.toggleTxt, reportType === t && s.toggleTxtActive]}>
+              {t === 'general' ? 'Ерөнхий' : 'Захиралдаа өгөх'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <View style={styles.tabs}>
+      {/* Period tabs */}
+      <View style={s.tabs}>
         {PERIODS.map(p => (
           <TouchableOpacity
             key={p.key}
-            style={[styles.tab, period === p.key && styles.tabActive]}
+            style={[s.tab, period === p.key && s.tabActive]}
             onPress={() => { setPeriod(p.key); setReport(null); }}
+            activeOpacity={0.7}
           >
-            <Text style={[styles.tabText, period === p.key && styles.tabTextActive]}>{p.label}</Text>
+            <Text style={[s.tabTxt, period === p.key && s.tabTxtActive]}>{p.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <View style={styles.datePicker}>
-        <TouchableOpacity style={styles.arrow} onPress={() => changeDay(-1)}>
-          <Text style={styles.arrowText}>‹</Text>
+      {/* Date picker */}
+      <View style={s.datePicker}>
+        <TouchableOpacity style={s.arrow} onPress={() => changeDay(-1)}>
+          <Text style={s.arrowTxt}>‹</Text>
         </TouchableOpacity>
-        <View style={styles.dateBtn}>
-          <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
+        <View style={s.dateBox}>
+          <Text style={s.dateTxt}>{fmt(selectedDate)}</Text>
         </View>
-        <TouchableOpacity style={styles.arrow} onPress={() => changeDay(1)}>
-          <Text style={styles.arrowText}>›</Text>
+        <TouchableOpacity style={s.arrow} onPress={() => changeDay(1)}>
+          <Text style={s.arrowTxt}>›</Text>
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.loadBtn} onPress={() => load(selectedDate, period, reportType)} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.loadBtnText}>Тайлан харах</Text>}
+      <TouchableOpacity style={s.btn} onPress={() => load(selectedDate, period, reportType)} disabled={loading}>
+        {loading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnTxt}>Тайлан харах</Text>}
       </TouchableOpacity>
 
       {report && (
-        <>
-          {dateRangeLabel && <Text style={styles.rangeLabel}>{dateRangeLabel}</Text>}
-          <View style={styles.statsRow}>
-            <StatCard label="Бүртгэл" value={report.entryCount} color="#4f46e5" />
-            <StatCard label="Даалгавар" value={report.taskCount} color="#0891b2" />
-            <StatCard label="Гүйцэтгэл" value={report.completedTaskCount} color="#16a34a" />
-            <StatCard label="Хүлээгдэж буй" value={report.pendingTaskCount} color="#d97706" />
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>{SUMMARY_LABELS[report.period][report.type]}</Text>
-            <Text style={styles.cardText}>{report.summary}</Text>
-          </View>
-        </>
+        reportType === 'work'
+          ? <ReportWorkCard {...report} />
+          : <ReportGeneralCard {...report} />
       )}
     </ScrollView>
   );
 }
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#F0F0F7' },
+  content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
+  pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 20, marginTop: 8 },
+
+  toggle: { flexDirection: 'row', backgroundColor: '#E8E8F0', borderRadius: 14, padding: 3, marginBottom: 12, height: 44 },
+  toggleBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 11 },
+  toggleBtnActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  toggleTxt: { fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
+  toggleTxtActive: { color: '#1A1A2E', fontWeight: '700' },
+
+  tabs: { flexDirection: 'row', backgroundColor: '#E8E8F0', borderRadius: 14, padding: 3, marginBottom: 16, height: 44 },
+  tab: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 11 },
+  tabActive: { backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  tabTxt: { fontSize: 13, fontWeight: '600', color: '#9CA3AF' },
+  tabTxtActive: { color: '#1A1A2E', fontWeight: '700' },
+
+  datePicker: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },
+  arrow: { padding: 12 },
+  arrowTxt: { fontSize: 28, color: '#6C47FF' },
+  dateBox: { paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#fff', borderRadius: 12, marginHorizontal: 8, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  dateTxt: { fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
+
+  btn: { backgroundColor: '#6C47FF', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginBottom: 20, shadowColor: '#6C47FF', shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+  btnTxt: { color: '#fff', fontWeight: '700', fontSize: 15 },
+});
