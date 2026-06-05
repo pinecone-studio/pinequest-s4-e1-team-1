@@ -1,23 +1,19 @@
 // react is used implicitly via JSX transform
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Feather } from 'expo-vector-icons';
+import { useState } from 'react';
+import ExportMenuModal from '../components/ExportMenuModal';
+
+
+
 
 type Props = {
-  period: string;
-  startDate: string;
-  endDate: string;
+  label: string; period: string; startDate: string; endDate: string;
+  taskCount: number; completedTaskCount: number; pendingTaskCount: number;
+  highCount: number; mediumCount: number; lowCount: number;
   entryCount: number;
-  taskCount: number;
-  completedTaskCount: number;
-  pendingTaskCount: number;
-  eventCount: number;
-  summary: string;
-};
-
-const LABEL: Record<string, string> = {
-  day: 'Өнөөдрийн ажлын тайлан',
-  week: '7 хоногийн ажлын тайлан',
-  month: 'Сарын ажлын тайлан',
+  executiveSummary: string; insights: string; risks: string; recommendations: string;
 };
 
 function fmt(iso: string) {
@@ -25,75 +21,137 @@ function fmt(iso: string) {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
 }
 
-function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+function KpiRow({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <View style={s.stat}>
-      <Text style={[s.statVal, { color }]}>{value}</Text>
-      <Text style={s.statLbl}>{label}</Text>
+    <View style={s.kpiRow}>
+      <View style={s.kpiLeft}>
+        <Text style={s.kpiLabel}>{label}</Text>
+        <View style={s.kpiBar}><View style={[s.kpiFill, { width: `${pct}%` as any, backgroundColor: color }]} /></View>
+      </View>
+      <Text style={[s.kpiVal, { color }]}>{value}</Text>
     </View>
   );
 }
 
-function ProgressBar({ done, total }: { done: number; total: number }) {
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+function Section({ icon, title, text, accent }: { icon: keyof typeof Feather.glyphMap; title: string; text: string; accent: string }) {
+  if (!text) return null;
   return (
-    <View style={s.progressCard}>
-      <View style={s.progressRow}>
-        <Text style={s.progressLbl}>Гүйцэтгэлийн хувь</Text>
-        <Text style={s.progressPct}>{pct}%</Text>
+    <View style={[s.section, { borderLeftColor: accent }]}>
+      <View style={s.sectionHeader}>
+        <Feather name={icon} size={14} color={accent} />
+        <Text style={[s.sectionTitle, { color: accent }]}>{title}</Text>
       </View>
-      <View style={s.bar}>
-        <View style={[s.fill, { width: `${pct}%` as any }]} />
-      </View>
+      <Text style={s.sectionTxt}>{text}</Text>
     </View>
   );
 }
 
 export default function ReportWorkCard(p: Props) {
+  const [exportVisible, setExportVisible] = useState(false);
   const range = p.period === 'day' ? fmt(p.endDate) : `${fmt(p.startDate)} – ${fmt(p.endDate)}`;
   const total = p.completedTaskCount + p.pendingTaskCount;
+  const pct = total > 0 ? Math.round((p.completedTaskCount / total) * 100) : 0;
+  const hasData = total > 0 || !!p.executiveSummary;
+
   return (
     <View>
-      <Text style={s.range}>{range}</Text>
-      <ProgressBar done={p.completedTaskCount} total={total} />
-      <View style={s.grid}>
-        <Stat label="Нийт"       value={total}                color="#6C47FF" />
-        <Stat label="Гүйцэтгэл" value={p.completedTaskCount} color="#16a34a" />
-        <Stat label="Үлдсэн"    value={p.pendingTaskCount}   color="#d97706" />
-        <Stat label="Бүртгэл"   value={p.entryCount}         color="#0891b2" />
-      </View>
-      <LinearGradient colors={['#5B3FE0', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.card}>
-        <View style={s.circle1} />
-        <View style={s.circle2} />
-        <Text style={s.cardLbl}>{LABEL[p.period] ?? 'Ажлын тайлан'}</Text>
-        <Text style={s.cardTxt}>{p.summary}</Text>
+      {/* Header */}
+      <LinearGradient colors={['#5B3FE0', '#8B5CF6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.header}>
+        <View style={s.circle1} /><View style={s.circle2} />
+        <View style={s.headerTop}>
+          <Text style={s.headerTitle}>ГҮЙЦЭТГЭЛИЙН ТАЙЛАН</Text>
+          <TouchableOpacity style={s.exportBtn} onPress={() => setExportVisible(true)}>
+            <Feather name="share" size={13} color="#fff" /><Text style={s.exportBtnTxt}> PDF</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={s.headerRange}>{range}</Text>
+        <View style={s.pctRow}>
+          <Text style={s.pctNum}>{pct}%</Text>
+          <Text style={s.pctLbl}>нийт гүйцэтгэл</Text>
+        </View>
+        <View style={s.headerBar}><View style={[s.headerFill, { width: `${pct}%` as any }]} /></View>
       </LinearGradient>
+
+      {!hasData && <Text style={s.empty}>Ажлын даалгавар олдсонгүй.</Text>}
+
+      {hasData && <>
+        {/* KPI grid */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Гол үзүүлэлтүүд (KPI)</Text>
+          <View style={s.statRow}>
+            {[
+              { label: 'Нийт', val: total, color: '#6C47FF' },
+              { label: 'Гүйцэтгэл', val: p.completedTaskCount, color: '#16a34a' },
+              { label: 'Үлдсэн', val: p.pendingTaskCount, color: '#d97706' },
+              { label: 'Бүртгэл', val: p.entryCount, color: '#0891b2' },
+            ].map(i => (
+              <View key={i.label} style={s.stat}>
+                <Text style={[s.statVal, { color: i.color }]}>{i.val}</Text>
+                <Text style={s.statLbl}>{i.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Priority breakdown */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>Ач холбогдлоор</Text>
+          <KpiRow label="Өндөр" value={p.highCount}   total={total} color="#ef4444" />
+          <KpiRow label="Дунд"  value={p.mediumCount} total={total} color="#f59e0b" />
+          <KpiRow label="Бага"  value={p.lowCount}    total={total} color="#6b7280" />
+        </View>
+
+        {/* Executive sections */}
+        <Section icon="file-text"   title="Товч дүгнэлт" text={p.executiveSummary} accent="#6C47FF" />
+        <Section icon="bar-chart-2" title="Шинжилгээ"    text={p.insights}         accent="#0891b2" />
+        <Section icon="alert-triangle" title="Эрсдэл"    text={p.risks}            accent="#ef4444" />
+        <Section icon="check-circle"   title="Зөвлөмж"   text={p.recommendations}  accent="#16a34a" />
+
+        {/* Footer */}
+        <View style={s.footer}>
+          <Text style={s.footerTxt}>PineQuest · Автомат тайлан · {fmt(p.endDate)}</Text>
+        </View>
+      </>}
+      <ExportMenuModal visible={exportVisible} onClose={() => setExportVisible(false)} data={p} />
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  range: { fontSize: 13, color: '#9CA3AF', fontWeight: '500', marginBottom: 14, textAlign: 'center' },
-  progressCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12,
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressLbl: { fontSize: 13, fontWeight: '600', color: '#374151' },
-  progressPct: { fontSize: 15, fontWeight: '800', color: '#6C47FF' },
-  bar: { height: 8, backgroundColor: '#E8E8F0', borderRadius: 4, overflow: 'hidden' },
-  fill: { height: 8, backgroundColor: '#6C47FF', borderRadius: 4 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
-  stat: {
-    flex: 1, minWidth: '45%', backgroundColor: '#fff', borderRadius: 16,
-    padding: 16, alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
-  },
-  statVal: { fontSize: 28, fontWeight: '800' },
-  statLbl: { fontSize: 12, color: '#9CA3AF', marginTop: 4, fontWeight: '500' },
-  card: { borderRadius: 20, padding: 20, minHeight: 120, overflow: 'hidden' },
-  circle1: { position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.08)' },
-  circle2: { position: 'absolute', right: 40, bottom: -40, width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(255,255,255,0.06)' },
-  cardLbl: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.6, marginBottom: 10, textTransform: 'uppercase' },
-  cardTxt: { fontSize: 14, color: '#fff', lineHeight: 22, fontWeight: '500' },
+  header: { borderRadius: 20, padding: 20, marginBottom: 14, overflow: 'hidden' },
+  circle1: { position: 'absolute', right: -30, top: -30, width: 130, height: 130, borderRadius: 65, backgroundColor: 'rgba(255,255,255,0.07)' },
+  circle2: { position: 'absolute', left: -20, bottom: -30, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.05)' },
+  headerTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  headerTitle: { fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.85)', letterSpacing: 1 },
+  exportBtn: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center' },
+  exportBtnTxt: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  headerRange: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 14 },
+  pctRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 8 },
+  pctNum: { fontSize: 40, fontWeight: '900', color: '#fff' },
+  pctLbl: { fontSize: 13, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
+  headerBar: { height: 6, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 3, overflow: 'hidden' }, headerFill: { height: 6, backgroundColor: '#fff', borderRadius: 3 },
+
+  empty: { textAlign: 'center', color: '#9CA3AF', fontSize: 14, marginTop: 20 },
+
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  cardTitle: { fontSize: 13, fontWeight: '700', color: '#1A1A2E', marginBottom: 14, letterSpacing: 0.2 },
+
+  statRow: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, alignItems: 'center', backgroundColor: '#F8F8FC', borderRadius: 12, paddingVertical: 12 },
+  statVal: { fontSize: 22, fontWeight: '800' },
+  statLbl: { fontSize: 11, color: '#9CA3AF', marginTop: 2, fontWeight: '500' },
+
+  kpiRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 },
+  kpiLeft: { flex: 1 },
+  kpiLabel: { fontSize: 12, color: '#374151', fontWeight: '600', marginBottom: 5 },
+  kpiBar: { height: 6, backgroundColor: '#F0F0F7', borderRadius: 3, overflow: 'hidden' }, kpiFill: { height: 6, borderRadius: 3 },
+  kpiVal: { fontSize: 16, fontWeight: '800', minWidth: 28, textAlign: 'right' },
+
+  section: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, borderLeftWidth: 4, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: '700' },
+  sectionTxt: { fontSize: 14, color: '#374151', lineHeight: 22 },
+
+  footer: { alignItems: 'center', paddingVertical: 16 }, footerTxt: { fontSize: 11, color: '#9CA3AF' },
 });
