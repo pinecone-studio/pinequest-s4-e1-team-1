@@ -56,7 +56,7 @@ export default function ReportScreen() {
             activeOpacity={0.7}
           >
             <Text style={[s.toggleTxt, reportType === t && s.toggleTxtActive]}>
-              {t === 'general' ? 'Ерөнхий' : 'Захиралдаа өгөх'}
+              {t === 'general' ? 'Хувийн' : 'Ажлын'}
             </Text>
           </TouchableOpacity>
         ))}

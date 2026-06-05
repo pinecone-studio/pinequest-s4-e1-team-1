@@ -76,7 +76,14 @@ export async function fetchReport(date: string, period: ReportPeriod = 'day', ty
     taskCount: number;
     completedTaskCount: number;
     pendingTaskCount: number;
+    highCount: number;
+    mediumCount: number;
+    lowCount: number;
     eventCount: number;
     summary: string;
+    executiveSummary: string;
+    insights: string;
+    risks: string;
+    recommendations: string;
   };
 }
