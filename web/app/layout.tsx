@@ -13,8 +13,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="mn" className={geist.className}>
-      <body className="min-h-screen flex flex-col bg-gray-50">
+    <html lang="mn" className={geist.className} suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}})()`,
+          }}
+        />
+      </head>
+      <body className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
         <AuthProvider>
           <AuthWrapper>{children}</AuthWrapper>
         </AuthProvider>

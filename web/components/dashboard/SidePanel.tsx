@@ -1,29 +1,22 @@
 import { Calendar, Clock, Sparkles } from "lucide-react";
 
-export type UpcomingTask = {
-  id: string;
-  title: string;
-  datetime: string;
-};
+export type UpcomingTask = { id: string; title: string; datetime: string };
 
 function UpcomingCard({ upcoming }: { upcoming: UpcomingTask[] }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-transparent dark:border-slate-700">
       <div className="flex items-center gap-2 mb-4">
-        <Calendar size={18} className="text-indigo-600" />
-        <h2 className="font-bold text-gray-900">Дараагийн</h2>
+        <Calendar size={18} className="text-indigo-600 dark:text-indigo-400" />
+        <h2 className="font-bold text-gray-900 dark:text-white">Дараагийн</h2>
       </div>
       <div className="flex flex-col gap-3">
         {upcoming.map((item) => (
           <div key={item.id} className="flex items-start gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0 mt-1.5" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">
-                {item.title}
-              </p>
-              <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                <Clock size={10} />
-                {item.datetime}
+              <p className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate">{item.title}</p>
+              <p className="text-xs text-gray-400 dark:text-slate-500 flex items-center gap-1 mt-0.5">
+                <Clock size={10} />{item.datetime}
               </p>
             </div>
           </div>
@@ -55,11 +48,7 @@ function AIInsightCard({ summary, loading }: { summary: string; loading: boolean
   );
 }
 
-export default function SidePanel({
-  upcoming,
-  insight,
-  insightLoading,
-}: {
+export default function SidePanel({ upcoming, insight, insightLoading }: {
   upcoming: UpcomingTask[];
   insight: string;
   insightLoading: boolean;
