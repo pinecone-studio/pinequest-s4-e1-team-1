@@ -1,0 +1,96 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  container: { flexGrow: 1, padding: 24, backgroundColor: '#f9fafb', alignItems: 'center' },
+  title: { fontSize: 22, fontWeight: '700', marginBottom: 20, marginTop: 16, color: '#111' },
+
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 20,
+    width: '100%',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 9,
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  tabTextActive: { color: '#4f46e5' },
+
+  datePicker: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  arrow: { padding: 12 },
+  arrowText: { fontSize: 28, color: '#4f46e5' },
+  dateBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginHorizontal: 8,
+  },
+  dateText: { fontSize: 16, fontWeight: '600', color: '#374151' },
+
+  loadBtn: {
+    backgroundColor: '#4f46e5',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    marginBottom: 20,
+    minWidth: 160,
+    alignItems: 'center',
+  },
+  loadBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+
+  rangeLabel: { fontSize: 13, color: '#6b7280', marginBottom: 12, fontWeight: '500' },
+
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16, width: '100%' },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  statValue: { fontSize: 28, fontWeight: '700' },
+  statLabel: { fontSize: 12, color: '#6b7280', marginTop: 4 },
+
+  card: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  cardLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  cardText: { fontSize: 15, color: '#111', lineHeight: 22 },
+});
