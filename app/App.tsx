@@ -14,6 +14,7 @@ import TasksScreen from './src/screens/TasksScreen';
 import ReportScreen from './src/screens/ReportScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import AboutScreen from './src/screens/AboutScreen';
+import AccountSettingsScreen from './src/screens/AccountSettingsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -31,6 +32,11 @@ function SettingsStackNavigator() {
         name="SettingsMain"
         component={SettingsScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AccountSettings"
+        component={AccountSettingsScreen}
+        options={{ title: 'Бүртгэлийн Тохиргоо' }}
       />
       <Stack.Screen
         name="AboutScreen"

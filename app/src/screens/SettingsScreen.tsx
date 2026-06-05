@@ -20,7 +20,10 @@ interface SettingItem {
   onPress: () => void;
 }
 
-type SettingsScreenNavigationProp = NativeStackNavigationProp<any, "SettingsMain">;
+type SettingsScreenNavigationProp = NativeStackNavigationProp<
+  any,
+  "SettingsMain"
+>;
 
 interface SettingsScreenProps {
   navigation: SettingsScreenNavigationProp;
@@ -65,15 +68,18 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       iconName: "user",
       title: "Account Settings",
       description: "Name, email & password",
-      onPress: () =>
-        Alert.alert("Coming Soon", "Account settings will be available soon"),
+      onPress: () => navigation.navigate("AccountSettings" as any),
     },
+
     {
-      iconName: "bell",
-      title: "Notifications",
-      description: "Reminders & daily nudges",
+      iconName: "moon",
+      title: "Appearance",
+      description: "Theme & calm motion",
       onPress: () =>
-        Alert.alert("Coming Soon", "Notification settings will be available soon"),
+        Alert.alert(
+          "Coming Soon",
+          "Appearance settings will be available soon",
+        ),
     },
     {
       iconName: "lock",
@@ -85,16 +91,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           "Privacy & security settings will be available soon",
         ),
     },
-    {
-      iconName: "moon",
-      title: "Appearance",
-      description: "Theme & calm motion",
-      onPress: () =>
-        Alert.alert(
-          "Coming Soon",
-          "Appearance settings will be available soon",
-        ),
-    },
+
     {
       iconName: "globe",
       title: "Language",
