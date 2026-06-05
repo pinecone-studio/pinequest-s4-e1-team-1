@@ -25,10 +25,27 @@ function formatTimeLeft(minutesLeft: number) {
 
 export { formatTimeLeft };
 
+const STORAGE_KEY = 'dismissed-notifications';
+
+function loadDismissed(): Set<string> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDismissed(set: Set<string>) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+}
+
 export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [dismissed, setDismissed]         = useState<Set<string>>(new Set());
-  const browserNotified                   = useRef<Set<string>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() =>
+    typeof window !== 'undefined' ? loadDismissed() : new Set()
+  );
+  const browserNotified = useRef<Set<string>>(new Set());
 
   const check = useCallback(async () => {
     try {
@@ -74,11 +91,19 @@ export function useNotifications() {
   }, [check]);
 
   function dismiss(id: string) {
-    setDismissed((prev) => new Set([...prev, id]));
+    setDismissed((prev) => {
+      const next = new Set([...prev, id]);
+      saveDismissed(next);
+      return next;
+    });
   }
 
   function dismissAll() {
-    setDismissed((prev) => new Set([...prev, ...notifications.map((n) => n.id)]));
+    setDismissed((prev) => {
+      const next = new Set([...prev, ...notifications.map((n) => n.id)]);
+      saveDismissed(next);
+      return next;
+    });
   }
 
   return { notifications, dismiss, dismissAll };

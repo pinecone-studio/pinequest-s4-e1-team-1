@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchTasks, fetchReport, updateTask, BackendTask } from '@/lib/api';
+import { fetchTasks, fetchReport, updateTask, deleteTask, BackendTask } from '@/lib/api';
 import { Plus } from 'lucide-react';
 import StatsRow from '@/components/dashboard/StatsRow';
 import TodaySection, { Task } from '@/components/dashboard/TodaySection';
@@ -15,6 +15,7 @@ function toFrontendTask(t: BackendTask): Task {
     id: t._id,
     title: t.title,
     description: null,
+    due: t.due || '',
     time: t.due ? t.due.slice(11, 16) || t.due.slice(0, 10) : '—',
     priority: t.priority === 'high' ? 'High' : 'Medium',
     category: t.category || 'Ерөнхий',
@@ -38,20 +39,37 @@ export default function HomePage() {
   const [insight, setInsight] = useState('');
   const [insightLoading, setInsightLoading] = useState(true);
 
-  useEffect(() => {
+  function loadTasks() {
     fetchTasks()
       .then(setRaw)
       .catch(() => setError('Даалгаврыг татахад алдаа гарлаа.'))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    loadTasks();
     fetchReport(today)
       .then((r) => setInsight(r.summary ?? ''))
       .catch(() => setInsight(''))
       .finally(() => setInsightLoading(false));
+
+    window.addEventListener('tasks-updated', loadTasks);
+    return () => window.removeEventListener('tasks-updated', loadTasks);
   }, []);
 
   async function toggleTask(id: string, completed: boolean) {
     const updated = await updateTask(id, { status: completed ? 'done' : 'pending' });
     setRaw((prev) => prev.map((t) => (t._id === id ? updated : t)));
+  }
+
+  async function handleUpdate(id: string, fields: { priority?: 'high'|'medium'|'low'; due?: string; category?: string }) {
+    const updated = await updateTask(id, fields);
+    setRaw((prev) => prev.map((t) => (t._id === id ? updated : t)));
+  }
+
+  async function handleDelete(id: string) {
+    await deleteTask(id);
+    setRaw((prev) => prev.filter((t) => t._id !== id));
   }
 
   const todayTasks = raw.filter((t) => !t.due || t.due.startsWith(today)).map(toFrontendTask);
@@ -96,7 +114,7 @@ export default function HomePage() {
         <StatsRow tasks={statsData} />
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
-          <TodaySection tasks={todayTasks} onToggle={toggleTask} />
+          <TodaySection tasks={todayTasks} onToggle={toggleTask} onUpdate={handleUpdate} onDelete={handleDelete} />
           <SidePanel upcoming={upcomingTasks} insight={insight} insightLoading={insightLoading} />
         </div>
       </div>

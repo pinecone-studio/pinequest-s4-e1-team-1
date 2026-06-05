@@ -14,6 +14,17 @@ import { auth } from '../firebase';
 const { width, height } = Dimensions.get('window');
 type EmailMode = 'login' | 'signup' | 'forgot';
 
+function translateFirebaseError(msg: string): string {
+  if (msg.includes('email-already-in-use'))   return 'Энэ и-мэйл хаяг аль хэдийн бүртгэлтэй байна.';
+  if (msg.includes('weak-password'))          return 'Нууц үг хэт богино байна. 6-аас дээш тэмдэгт оруулна уу.';
+  if (msg.includes('user-not-found'))         return 'И-мэйл хаяг олдсонгүй.';
+  if (msg.includes('wrong-password') || msg.includes('invalid-credential')) return 'Нууц үг буруу байна.';
+  if (msg.includes('invalid-email'))          return 'И-мэйл хаягийн формат буруу байна.';
+  if (msg.includes('too-many-requests'))      return 'Хэт олон удаа оролдлоо. Түр хүлээгээд дахин оролдоно уу.';
+  if (msg.includes('network-request-failed')) return 'Интернэт холболт байхгүй байна.';
+  return 'Нэвтрэхэд алдаа гарлаа. Дахин оролдоно уу.';
+}
+
 export default function LoginScreen() {
   const [emailModal, setEmailModal] = useState(false);
   const [mode, setMode] = useState<EmailMode>('login');
@@ -33,8 +44,8 @@ export default function LoginScreen() {
         setMode('login');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Алдаа гарлаа.';
-      Alert.alert('Алдаа', msg.replace('Firebase: ', '').replace(/\s*\(auth\/.*\)/, ''));
+      const raw = err instanceof Error ? err.message : '';
+      Alert.alert('Алдаа', translateFirebaseError(raw));
     } finally {
       setLoading(false);
     }
