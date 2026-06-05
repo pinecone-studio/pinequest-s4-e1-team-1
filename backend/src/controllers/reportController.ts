@@ -29,18 +29,18 @@ function getDateRange(period: string, date: string): { start: Date; end: Date; l
 
 function buildPrompt(type: string, periodLabel: string, stats: Record<string, number>, entrySummaries: string, taskTitles: string, eventTitles: string) {
   if (type === 'work') {
-    return `Та ажилтны ${periodLabel}-ны ажлын гүйцэтгэлийг үндэслэн монгол хэлээр 3-5 өгүүлбэрт мэргэжлийн, товч тайлан бич. "Та" гэж хандах. Гүйцэтгэсэн ажлыг онцол, дараагийн алхамыг санал болго.
+    return `Та ажилтны ${periodLabel}-ны гүйцэтгэлийг үндэслэн захирлаа танилцуулах мэргэжлийн, албан ёсны тайлан монгол хэлээр бич. Хэлбэр: товч, тодорхой, баримтад тулгуурласан. Гүйцэтгэсэн ажлуудыг онцол. Хүлээгдэж буй ажлуудыг дурд. 3-5 өгүүлбэр. "Тайлант хугацаанд...", "Нийт ... даалгавраас ... гүйцэтгэлт..." гэх мэт мэргэжлийн хэллэг ашигла.
 
 Ажлын статистик:
-- Ажлын даалгавар нийт: ${stats.taskCount}
+- Нийт ажлын даалгавар: ${stats.taskCount}
 - Гүйцэтгэсэн: ${stats.completedTaskCount}
 - Хүлээгдэж буй: ${stats.pendingTaskCount}
 - Бүртгэл: ${stats.entryCount}
 
-Ажлын бүртгэлүүд:
+Ажлын даалгаврууд:
 ${entrySummaries}
-${taskTitles ? `\nАжлын даалгаврууд: ${taskTitles}` : ''}
-${eventTitles ? `\nАжлын үйл явдлууд: ${eventTitles}` : ''}`;
+${taskTitles ? `\nДаалгаврууд: ${taskTitles}` : ''}
+${eventTitles ? `\nҮйл явдлууд: ${eventTitles}` : ''}`;
   }
 
   return `Та хэрэглэгчийн ${periodLabel}-ны үйл ажиллагааг үндэслэн түүнтэй шууд ярьдаг, дотно, урамшуулсан байдлаар монгол хэлээр 3-5 өгүүлбэрт дүгнэлт бич. "Та" гэж хандах. Сайн хийсэн зүйлийг тодорхой магт.
