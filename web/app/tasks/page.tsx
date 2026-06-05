@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search, Plus } from "lucide-react";
-import { fetchTasks, updateTask, BackendTask } from "@/lib/api";
+import { fetchTasks, updateTask, deleteTask, BackendTask } from "@/lib/api";
 import TaskCard from "@/components/tasks/TaskCard";
 import AddReminderModal from "@/components/dashboard/AddReminderModal";
 
@@ -32,6 +32,16 @@ export default function TasksPage() {
   async function toggleTask(id: string, done: boolean) {
     const updated = await updateTask(id, { status: done ? "done" : "pending" });
     setTasks((prev) => prev.map((t) => (t._id === id ? updated : t)));
+  }
+
+  async function handleUpdate(id: string, fields: Partial<Pick<BackendTask, 'priority' | 'due' | 'category'>>) {
+    const updated = await updateTask(id, fields);
+    setTasks((prev) => prev.map((t) => (t._id === id ? updated : t)));
+  }
+
+  async function handleDelete(id: string) {
+    await deleteTask(id);
+    setTasks((prev) => prev.filter((t) => t._id !== id));
   }
 
   const filtered = tasks
@@ -118,7 +128,7 @@ export default function TasksPage() {
         {!loading && filtered.length > 0 && (
           <div className="flex flex-col gap-3">
             {filtered.map((task) => (
-              <TaskCard key={task._id} task={task} onToggle={toggleTask} />
+              <TaskCard key={task._id} task={task} onToggle={toggleTask} onUpdate={handleUpdate} onDelete={handleDelete} />
             ))}
           </div>
         )}

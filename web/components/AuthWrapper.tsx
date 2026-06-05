@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from './NavBar';
 
-const PUBLIC = ['/login'];
+const PUBLIC = ['/login', '/landing'];
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -15,7 +15,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (loading) return;
-    if (!user && !isPublic) router.replace('/login');
+    if (!user && !isPublic) router.replace('/landing');
     if (user && isPublic) router.replace('/');
   }, [user, loading, isPublic, router]);
 

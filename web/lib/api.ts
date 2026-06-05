@@ -75,13 +75,21 @@ export async function saveEntry(body: {
   return data;
 }
 
-export async function fetchReport(date: string) {
-  const { data } = await api.post('/api/report', { date });
-  return data as {
-    date: string;
-    entryCount: number;
-    taskCount: number;
-    eventCount: number;
-    summary: string;
-  };
+export type ReportPeriod = 'day' | 'week' | 'month';
+export type ReportType   = 'general' | 'work';
+
+export type ReportData = {
+  period: ReportPeriod; type: ReportType; label: string;
+  startDate: string; endDate: string;
+  entryCount: number; taskCount: number;
+  completedTaskCount: number; pendingTaskCount: number; eventCount: number;
+  summary?: string;
+  // work-only
+  highCount?: number; mediumCount?: number; lowCount?: number;
+  executiveSummary?: string; insights?: string; risks?: string; recommendations?: string;
+};
+
+export async function fetchReport(date: string, period: ReportPeriod = 'day', type: ReportType = 'general') {
+  const { data } = await api.post('/api/report', { date, period, type });
+  return data as ReportData;
 }
