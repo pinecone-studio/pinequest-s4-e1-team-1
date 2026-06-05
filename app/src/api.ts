@@ -62,17 +62,20 @@ export async function deleteTask(id: string) {
 }
 
 export type ReportPeriod = 'day' | 'week' | 'month';
+export type ReportType = 'general' | 'work';
 
-export async function fetchReport(date: string, period: ReportPeriod = 'day') {
-  const { data } = await api.post('/api/report', { date, period }, { headers: await authHeader() });
+export async function fetchReport(date: string, period: ReportPeriod = 'day', type: ReportType = 'general') {
+  const { data } = await api.post('/api/report', { date, period, type }, { headers: await authHeader() });
   return data as {
     period: ReportPeriod;
+    type: ReportType;
     label: string;
     startDate: string;
     endDate: string;
     entryCount: number;
     taskCount: number;
     completedTaskCount: number;
+    pendingTaskCount: number;
     eventCount: number;
     summary: string;
   };

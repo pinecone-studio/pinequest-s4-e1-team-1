@@ -4,6 +4,27 @@ export const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 24, backgroundColor: '#f9fafb', alignItems: 'center' },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 20, marginTop: 16, color: '#111' },
 
+  typeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginBottom: 16,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  typeBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  typeBtnActive: {
+    backgroundColor: '#4f46e5',
+  },
+  typeBtnText: { fontSize: 14, fontWeight: '600', color: '#6b7280' },
+  typeBtnTextActive: { color: '#fff' },
+
   tabs: {
     flexDirection: 'row',
     backgroundColor: '#e5e7eb',
