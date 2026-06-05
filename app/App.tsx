@@ -157,6 +157,20 @@ function AppTabs() {
             }}
           />
           <Tab.Screen
+            name="Calendar"
+            component={CalendarScreen}
+            options={{
+              title: "Календарь",
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons
+                  name={focused ? "calendar" : "calendar-outline"}
+                  size={24}
+                  color={color}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
             name="Report"
             component={ReportScreen}
             options={{

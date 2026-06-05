@@ -13,6 +13,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchTasks, Task } from "../api";
 import BottomNav from "../components/BottomNav";
+import { useTheme } from "../theme/ThemeContext";
+import { Colors } from "../theme/colors";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -68,12 +70,14 @@ function CalendarGrid({
   selected,
   byDate,
   onSelect,
+  C,
 }: {
   year: number;
   month: number;
   selected: string;
   byDate: Record<string, Task[]>;
   onSelect: (d: string) => void;
+  C: Colors;
 }) {
   const today = todayStr();
   const cells: (number | null)[] = [
@@ -87,11 +91,10 @@ function CalendarGrid({
       <View style={g.row}>
         {WEEKDAYS.map((d) => (
           <View key={d} style={g.headerCell}>
-            <Text style={g.headerText}>{d}</Text>
+            <Text style={[g.headerText, { color: C.textMuted }]}>{d}</Text>
           </View>
         ))}
       </View>
-
       {Array.from({ length: cells.length / 7 }, (_, ri) => (
         <View key={ri} style={g.row}>
           {cells.slice(ri * 7, ri * 7 + 7).map((day, ci) => {
@@ -110,15 +113,18 @@ function CalendarGrid({
                 <View
                   style={[
                     g.circle,
-                    isToday && !isSel && g.todayCircle,
-                    isSel && g.selCircle,
+                    isToday &&
+                      !isSel && { borderWidth: 2, borderColor: C.accent },
+                    isSel && { backgroundColor: C.accent },
                   ]}
                 >
                   <Text
                     style={[
                       g.num,
-                      isToday && !isSel && g.todayNum,
-                      isSel && g.selNum,
+                      { color: C.text },
+                      isToday &&
+                        !isSel && { color: C.accent, fontWeight: "800" },
+                      isSel && { color: "#fff", fontWeight: "800" },
                     ]}
                   >
                     {day}
@@ -127,10 +133,13 @@ function CalendarGrid({
                 <View style={g.dotRow}>
                   {count > 0 && count <= 3 ? (
                     Array.from({ length: count }, (_, i) => (
-                      <View key={i} style={g.dot} />
+                      <View
+                        key={i}
+                        style={[g.dot, { backgroundColor: C.accent }]}
+                      />
                     ))
                   ) : count > 3 ? (
-                    <View style={g.badge}>
+                    <View style={[g.badge, { backgroundColor: C.accent }]}>
                       <Text style={g.badgeText}>{count}</Text>
                     </View>
                   ) : null}
@@ -148,12 +157,7 @@ const g = StyleSheet.create({
   grid: { width: "100%" },
   row: { flexDirection: "row" },
   headerCell: { flex: 1, alignItems: "center", paddingVertical: 10 },
-  headerText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#9CA3AF",
-    letterSpacing: 0.5,
-  },
+  headerText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
   cell: { flex: 1, alignItems: "center", paddingTop: 4, height: CELL_H },
   circle: {
     width: 34,
@@ -162,11 +166,7 @@ const g = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  todayCircle: { borderWidth: 2, borderColor: "#6C47FF" },
-  selCircle: { backgroundColor: "#6C47FF" },
-  num: { fontSize: 14, color: "#1A1A2E", fontWeight: "500" },
-  todayNum: { color: "#6C47FF", fontWeight: "800" },
-  selNum: { color: "#fff", fontWeight: "800" },
+  num: { fontSize: 14, fontWeight: "500" },
   dotRow: {
     flexDirection: "row",
     gap: 2,
@@ -175,27 +175,35 @@ const g = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#6C47FF" },
-  badge: { backgroundColor: "#6C47FF", borderRadius: 6, paddingHorizontal: 5 },
+  dot: { width: 5, height: 5, borderRadius: 2.5 },
+  badge: { borderRadius: 6, paddingHorizontal: 5 },
   badgeText: { fontSize: 8, color: "#fff", fontWeight: "800" },
 });
 
-function TaskRow({ task }: { task: Task }) {
+function TaskRow({ task, C }: { task: Task; C: Colors }) {
   const color = PRIO_COLOR[task.priority ?? "medium"];
   return (
-    <View style={tr.wrap}>
+    <View
+      style={[tr.wrap, { backgroundColor: C.surface, shadowColor: C.shadow }]}
+    >
       <View style={[tr.bar, { backgroundColor: color }]} />
       <View style={{ flex: 1 }}>
         <Text
-          style={[tr.title, task.status === "done" && tr.done]}
+          style={[
+            tr.title,
+            { color: C.text },
+            task.status === "done" && tr.done,
+          ]}
           numberOfLines={2}
         >
           {task.title}
         </Text>
         <View style={tr.meta}>
           {task.category ? (
-            <View style={tr.catChip}>
-              <Text style={tr.catText}>{task.category}</Text>
+            <View style={[tr.catChip, { backgroundColor: C.accentLight }]}>
+              <Text style={[tr.catText, { color: C.accent }]}>
+                {task.category}
+              </Text>
             </View>
           ) : null}
           <View style={[tr.prioChip, { backgroundColor: color + "18" }]}>
@@ -214,28 +222,21 @@ const tr = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 14,
     marginBottom: 10,
     gap: 12,
-    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
   bar: { width: 4, borderRadius: 2, alignSelf: "stretch", minHeight: 36 },
-  title: { fontSize: 14, fontWeight: "600", color: "#1A1A2E", marginBottom: 6 },
-  done: { textDecorationLine: "line-through", color: "#9CA3AF" },
+  title: { fontSize: 14, fontWeight: "600", marginBottom: 6 },
+  done: { textDecorationLine: "line-through", opacity: 0.4 },
   meta: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  catChip: {
-    backgroundColor: "#F3F0FF",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  catText: { fontSize: 11, color: "#6C47FF", fontWeight: "600" },
+  catChip: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  catText: { fontSize: 11, fontWeight: "600" },
   prioChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,6 +250,7 @@ const tr = StyleSheet.create({
 });
 
 export default function CalendarScreen({ navigation }: any) {
+  const { colors: C } = useTheme();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
@@ -278,11 +280,12 @@ export default function CalendarScreen({ navigation }: any) {
   const byDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
     for (const tk of tasks) {
-      if (tk.due) (map[tk.due] ??= []).push(tk);
+      const raw = tk.due?.slice(0, 10) ?? "";
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) continue;
+      (map[raw] ??= []).push(tk);
     }
     return map;
   }, [tasks]);
-
   const selectedTasks = useMemo(() => {
     const order: Record<string, number> = { high: 0, medium: 1, low: 2 };
     return [...(byDate[selected] ?? [])].sort(
@@ -300,7 +303,6 @@ export default function CalendarScreen({ navigation }: any) {
       }
       return m - 1;
     });
-
   const nextMonth = () =>
     setMonth((m) => {
       if (m === 11) {
@@ -311,27 +313,44 @@ export default function CalendarScreen({ navigation }: any) {
     });
 
   return (
-    <SafeAreaView style={s.root} edges={["top"]}>
-      {/* Тогтмол: header + calendar */}
-      <View style={s.top}>
+    <SafeAreaView style={[s.root, { backgroundColor: C.bg }]} edges={["top"]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={s.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={s.header}>
-          <Text style={s.subTitle}>{year}</Text>
-          <Text style={s.pageTitle}>Календарь</Text>
+          <Text style={[s.subTitle, { color: C.textMuted }]}>{year}</Text>
+          <Text style={[s.pageTitle, { color: C.text }]}>Календарь</Text>
         </View>
 
         <View style={s.monthNav}>
-          <TouchableOpacity style={s.arrowBtn} onPress={prevMonth}>
-            <Text style={s.arrow}>‹</Text>
+          <TouchableOpacity
+            style={[s.arrowBtn, { backgroundColor: C.accentLight }]}
+            onPress={prevMonth}
+          >
+            <Text style={[s.arrow, { color: C.accent }]}>‹</Text>
           </TouchableOpacity>
-          <Text style={s.monthLabel}>{MONTHS[month]}</Text>
-          <TouchableOpacity style={s.arrowBtn} onPress={nextMonth}>
-            <Text style={s.arrow}>›</Text>
+          <Text style={[s.monthLabel, { color: C.text }]}>{MONTHS[month]}</Text>
+          <TouchableOpacity
+            style={[s.arrowBtn, { backgroundColor: C.accentLight }]}
+            onPress={nextMonth}
+          >
+            <Text style={[s.arrow, { color: C.accent }]}>›</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={s.calCard}>
+        <View
+          style={[
+            s.calCard,
+            { backgroundColor: C.surface, shadowColor: C.shadow },
+          ]}
+        >
           {loading ? (
-            <ActivityIndicator color="#6C47FF" style={{ marginVertical: 50 }} />
+            <ActivityIndicator
+              color={C.accent}
+              style={{ marginVertical: 50 }}
+            />
           ) : (
             <CalendarGrid
               year={year}
@@ -339,28 +358,24 @@ export default function CalendarScreen({ navigation }: any) {
               selected={selected}
               byDate={byDate}
               onSelect={setSelected}
+              C={C}
             />
           )}
         </View>
-      </View>
 
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={s.taskList}
-        showsVerticalScrollIndicator={false}
-        alwaysBounceVertical
-      >
         <View style={s.dayHeader}>
           <View>
-            <Text style={s.dayDate}>{formatLabel(selected)}</Text>
-            <Text style={s.dayCount}>
+            <Text style={[s.dayDate, { color: C.text }]}>
+              {formatLabel(selected)}
+            </Text>
+            <Text style={[s.dayCount, { color: C.textMuted }]}>
               {selectedTasks.length > 0
                 ? `${selectedTasks.length} даалгавар`
                 : "Даалгавар байхгүй"}
             </Text>
           </View>
           {selectedTasks.length > 0 && (
-            <View style={s.countBadge}>
+            <View style={[s.countBadge, { backgroundColor: C.accent }]}>
               <Text style={s.countBadgeText}>{selectedTasks.length}</Text>
             </View>
           )}
@@ -369,10 +384,14 @@ export default function CalendarScreen({ navigation }: any) {
         {selectedTasks.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyEmoji}>📅</Text>
-            <Text style={s.emptyText}>Энэ өдөр даалгавар байхгүй</Text>
+            <Text style={[s.emptyText, { color: C.textSec }]}>
+              Энэ өдөр даалгавар байхгүй
+            </Text>
           </View>
         ) : (
-          selectedTasks.map((task) => <TaskRow key={task._id} task={task} />)
+          selectedTasks.map((task) => (
+            <TaskRow key={task._id} task={task} C={C} />
+          ))
         )}
 
         <View style={{ height: 100 }} />
@@ -384,21 +403,11 @@ export default function CalendarScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F0F0F7" },
-  top: { paddingHorizontal: 16, paddingTop: 8 },
-  header: { marginBottom: 14 },
-  subTitle: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    fontWeight: "500",
-    marginBottom: 2,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#1A1A2E",
-    letterSpacing: -0.5,
-  },
+  root: { flex: 1 },
+  scroll: { paddingHorizontal: 16, paddingTop: 2 },
+  header: { marginBottom: 8 },
+  subTitle: { fontSize: 13, fontWeight: "500", marginBottom: 2 },
+  pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
   monthNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -410,55 +419,39 @@ const s = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F3F0FF",
     alignItems: "center",
     justifyContent: "center",
   },
-  arrow: { fontSize: 22, color: "#6C47FF", fontWeight: "600", lineHeight: 26 },
-  monthLabel: { fontSize: 17, fontWeight: "800", color: "#1A1A2E" },
+  arrow: { fontSize: 22, fontWeight: "600", lineHeight: 26 },
+  monthLabel: { fontSize: 17, fontWeight: "800" },
   calCard: {
-    backgroundColor: "#fff",
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 4,
     paddingBottom: 12,
     marginBottom: 16,
-    shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
-  taskList: { paddingHorizontal: 16, paddingTop: 4, flexGrow: 1 },
   dayHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 14,
   },
-  dayDate: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#1A1A2E",
-    letterSpacing: -0.3,
-  },
-  dayCount: { fontSize: 13, color: "#9CA3AF", fontWeight: "500", marginTop: 2 },
+  dayDate: { fontSize: 18, fontWeight: "800", letterSpacing: -0.3 },
+  dayCount: { fontSize: 13, fontWeight: "500", marginTop: 2 },
   countBadge: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#6C47FF",
     justifyContent: "center",
     alignItems: "center",
   },
   countBadgeText: { color: "#fff", fontSize: 12, fontWeight: "800" },
-  empty: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 32,
-    gap: 8,
-  },
+  empty: { alignItems: "center", paddingVertical: 32, gap: 8 },
   emptyEmoji: { fontSize: 44 },
-  emptyText: { fontSize: 15, fontWeight: "600", color: "#6B7280" },
+  emptyText: { fontSize: 15, fontWeight: "600" },
 });
