@@ -22,9 +22,9 @@ import {
 import FocusCard from "../components/FocusCard";
 import TabFilter from "../components/TabFilter";
 import TaskList from "../components/TaskList";
-import BottomNav from "../components/BottomNav";
 import AddTaskModal from "../components/AddTaskModal";
 import { Tab, TODAY } from "../components/taskConstants";
+import { useTheme } from "../theme/ThemeContext";
 
 const CATS_KEY = "task_categories_v1";
 const DEFAULT_CATS = [
@@ -56,19 +56,13 @@ function formatDate(d: Date) {
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
 }
 
-export default function TasksScreen({ navigation }: any) {
+export default function TasksScreen() {
+  const { colors: C } = useTheme();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATS);
   const [addModal, setAddModal] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      navigation.setOptions({ tabBarStyle: { display: "none" } });
-      return () => navigation.setOptions({ tabBarStyle: undefined });
-    }, [navigation]),
-  );
 
   useEffect(() => {
     AsyncStorage.getItem(CATS_KEY).then((v) => {
@@ -169,7 +163,7 @@ export default function TasksScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={s.root} edges={["top"]}>
+    <SafeAreaView style={[s.root, { backgroundColor: C.bg }]} edges={["top"]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={s.scroll}
@@ -177,8 +171,8 @@ export default function TasksScreen({ navigation }: any) {
       >
         <View style={s.header}>
           <View>
-            <Text style={s.date}>{formatDate(new Date())}</Text>
-            <Text style={s.pageTitle}>Your tasks</Text>
+            <Text style={[s.date, { color: C.textMuted }]}>{formatDate(new Date())}</Text>
+            <Text style={[s.pageTitle, { color: C.text }]}>Your tasks</Text>
           </View>
         </View>
 
@@ -195,18 +189,16 @@ export default function TasksScreen({ navigation }: any) {
           onToggle={toggleComplete}
           onDelete={confirmDelete}
         />
-        <View style={{ height: 110 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
       <TouchableOpacity
-        style={s.fab}
+        style={[s.fab, { backgroundColor: C.accent, shadowColor: C.accent }]}
         onPress={() => setAddModal(true)}
         activeOpacity={0.85}
       >
         <Text style={s.fabText}>+</Text>
       </TouchableOpacity>
-
-      <BottomNav navigation={navigation} />
 
       <AddTaskModal
         visible={addModal}
@@ -219,7 +211,7 @@ export default function TasksScreen({ navigation }: any) {
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F0F0F7" },
+  root: { flex: 1 },
   scroll: { paddingHorizontal: 16, paddingTop: 8 },
   header: {
     flexDirection: "row",
@@ -227,22 +219,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  date: { fontSize: 13, color: "#9CA3AF", fontWeight: "500", marginBottom: 2 },
+  date: { fontSize: 13, fontWeight: "500", marginBottom: 2 },
   pageTitle: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#1A1A2E",
     letterSpacing: -0.5,
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#6C47FF",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   fab: {
     position: "absolute",
     bottom: 90,
@@ -250,10 +232,8 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "#6C47FF",
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#6C47FF",
     shadowOpacity: 0.45,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 5 },

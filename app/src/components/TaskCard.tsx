@@ -7,20 +7,26 @@ import {
   CATEGORY_PALETTE,
   FALLBACK_CAT,
 } from "./taskConstants";
+import { useTheme } from "../theme/ThemeContext";
 
 type Props = { task: Task; onToggle: () => void; onDelete: () => void };
 
 export default function TaskCard({ task, onToggle, onDelete }: Props) {
+  const { colors: C } = useTheme();
   const done = task.status === "done";
   const pColor = PRIO_COLOR[task.priority ?? "medium"];
   const cat = CATEGORY_PALETTE[task.category] ?? FALLBACK_CAT;
 
   return (
-    <TouchableOpacity style={s.card} onLongPress={onDelete} activeOpacity={0.9}>
+    <TouchableOpacity
+      style={[s.card, { backgroundColor: C.surface }]}
+      onLongPress={onDelete}
+      activeOpacity={0.9}
+    >
       <View style={[s.accent, { backgroundColor: pColor }]} />
 
       <TouchableOpacity
-        style={[s.checkbox, done && s.checkboxDone]}
+        style={[s.checkbox, { borderColor: C.border }, done && s.checkboxDone]}
         onPress={onToggle}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
@@ -28,7 +34,7 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
       </TouchableOpacity>
 
       <View style={s.body}>
-        <Text style={[s.title, done && s.titleDone]} numberOfLines={2}>
+        <Text style={[s.title, { color: C.text }, done && s.titleDone]} numberOfLines={2}>
           {task.title}
         </Text>
         <View style={s.meta}>
@@ -46,8 +52,8 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
             </Text>
           </View>
           {!!task.due && (
-            <View style={s.duePill}>
-              <Text style={s.dueText}> {task.due}</Text>
+            <View style={[s.duePill, { backgroundColor: C.surfaceAlt }]}>
+              <Text style={[s.dueText, { color: C.textSec }]}> {task.due}</Text>
             </View>
           )}
         </View>
@@ -60,7 +66,6 @@ const s = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderRadius: 16,
     marginBottom: 10,
     padding: 14,
@@ -85,7 +90,6 @@ const s = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#D1D5DB",
     marginRight: 12,
     justifyContent: "center",
     alignItems: "center",
@@ -97,7 +101,6 @@ const s = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#1A1A2E",
     marginBottom: 7,
     lineHeight: 20,
   },
@@ -114,10 +117,9 @@ const s = StyleSheet.create({
   prioDot: { width: 7, height: 7, borderRadius: 3.5 },
   prioText: { fontSize: 11, fontWeight: "600" },
   duePill: {
-    backgroundColor: "#F3F4F6",
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  dueText: { fontSize: 11, color: "#6B7280", fontWeight: "500" },
+  dueText: { fontSize: 11, fontWeight: "500" },
 });

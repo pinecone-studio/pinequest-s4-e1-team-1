@@ -1,17 +1,13 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
+  View, Text, TouchableOpacity, StyleSheet,
+  Alert, ActivityIndicator, ScrollView, Switch,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "expo-vector-icons";
 import { signOut, deleteUser } from "firebase/auth";
 import { auth } from "../firebase";
+import { useTheme } from "../theme/ThemeContext";
 
 interface SettingItem {
   iconName: keyof typeof Feather.glyphMap;
@@ -20,10 +16,7 @@ interface SettingItem {
   onPress: () => void;
 }
 
-type SettingsScreenNavigationProp = NativeStackNavigationProp<
-  any,
-  "SettingsMain"
->;
+type SettingsScreenNavigationProp = NativeStackNavigationProp<any, "SettingsMain">;
 
 interface SettingsScreenProps {
   navigation: SettingsScreenNavigationProp;
@@ -31,6 +24,7 @@ interface SettingsScreenProps {
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [loading, setLoading] = useState(false);
+  const { isDark, toggleTheme, colors: C } = useTheme();
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -70,28 +64,19 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       description: "Name, email & password",
       onPress: () => navigation.navigate("AccountSettings" as any),
     },
-
     {
       iconName: "moon",
-      title: "Appearance",
-      description: "Theme & calm motion",
-      onPress: () =>
-        Alert.alert(
-          "Coming Soon",
-          "Appearance settings will be available soon",
-        ),
+      title: isDark ? "Dark mode" : "Light mode",
+      description: "Appearance theme",
+      onPress: toggleTheme,
     },
     {
       iconName: "lock",
       title: "Privacy & Security",
       description: "Data protection & privacy",
       onPress: () =>
-        Alert.alert(
-          "Coming Soon",
-          "Privacy & security settings will be available soon",
-        ),
+        Alert.alert("Coming Soon", "Privacy & security settings will be available soon"),
     },
-
     {
       iconName: "globe",
       title: "Language",
@@ -116,40 +101,52 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
+      style={[s.container, { backgroundColor: C.bg }]}
+      contentContainerStyle={s.contentContainer}
     >
-      <Text style={styles.title}>Settings</Text>
+      <Text style={[s.title, { color: C.text }]}>Settings</Text>
 
-      <View style={styles.settingsGroup}>
+      <View style={[s.settingsGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
         {settingItems.map((item, index) => (
           <TouchableOpacity
             key={index}
             style={[
-              styles.settingItem,
-              index !== settingItems.length - 1 && styles.settingItemBorder,
+              s.settingItem,
+              index !== settingItems.length - 1 && [s.settingItemBorder, { borderBottomColor: C.border }],
             ]}
             onPress={item.onPress}
           >
-            <View style={styles.iconContainer}>
-              <Feather name={item.iconName} size={20} color="#4f46e5" />
+            <View style={[s.iconContainer, { backgroundColor: C.accentLight }]}>
+              <Feather name={item.iconName} size={20} color={C.accent} />
             </View>
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>{item.title}</Text>
-              <Text style={styles.settingDescription}>{item.description}</Text>
+            <View style={s.settingContent}>
+              <Text style={[s.settingTitle, { color: C.text }]}>{item.title}</Text>
+              <Text style={[s.settingDescription, { color: C.textMuted }]}>{item.description}</Text>
             </View>
-            <Feather name="chevron-right" size={20} color="#d1d5db" />
+            {item.iconName === 'moon' ? (
+              <Switch
+                value={isDark}
+                onValueChange={toggleTheme}
+                trackColor={{ false: C.border, true: C.accent }}
+                thumbColor="#fff"
+              />
+            ) : (
+              <Feather name="chevron-right" size={20} color={C.textMuted} />
+            )}
           </TouchableOpacity>
         ))}
       </View>
 
-      <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-        <Feather name="log-out" size={18} color="#374151" />
-        <Text style={styles.logoutText}>Log out</Text>
+      <TouchableOpacity
+        style={[s.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+        onPress={handleLogout}
+      >
+        <Feather name="log-out" size={18} color={C.textSec} />
+        <Text style={[s.logoutText, { color: C.textSec }]}>Log out</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.deleteBtn}
+        style={s.deleteBtn}
         onPress={handleDeleteAccount}
         disabled={loading}
       >
@@ -158,30 +155,22 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         ) : (
           <>
             <Feather name="trash-2" size={18} color="#dc2626" />
-            <Text style={styles.deleteText}>Delete account</Text>
+            <Text style={s.deleteText}>Delete account</Text>
           </>
         )}
       </TouchableOpacity>
-      <Text style={styles.deleteHint}>Cannot be undone</Text>
+      <Text style={[s.deleteHint, { color: C.textMuted }]}>Cannot be undone</Text>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb" },
+const s = StyleSheet.create({
+  container: { flex: 1 },
   contentContainer: { padding: 24, paddingBottom: 32 },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-    marginBottom: 24,
-    marginTop: 8,
-  },
+  title: { fontSize: 28, fontWeight: "700", marginBottom: 24, marginTop: 8 },
   settingsGroup: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
     marginBottom: 24,
     overflow: "hidden",
   },
@@ -191,34 +180,19 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 16,
   },
-  settingItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
-  },
+  settingItemBorder: { borderBottomWidth: 1 },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: "#eef2ff",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
   },
-  settingContent: {
-    flex: 1,
-  },
-  settingTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
-    marginBottom: 4,
-  },
-  settingDescription: {
-    fontSize: 13,
-    color: "#9ca3af",
-  },
+  settingContent: { flex: 1 },
+  settingTitle: { fontSize: 15, fontWeight: "600", marginBottom: 4 },
+  settingDescription: { fontSize: 13 },
   logoutBtn: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -226,15 +200,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "#e5e7eb",
     marginBottom: 12,
     gap: 10,
   },
-  logoutText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#374151",
-  },
+  logoutText: { fontSize: 15, fontWeight: "600" },
   deleteBtn: {
     borderRadius: 12,
     paddingVertical: 14,
@@ -248,14 +217,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 10,
   },
-  deleteText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#dc2626",
-  },
-  deleteHint: {
-    fontSize: 12,
-    color: "#9ca3af",
-    textAlign: "center",
-  },
+  deleteText: { fontSize: 15, fontWeight: "600", color: "#dc2626" },
+  deleteHint: { fontSize: 12, textAlign: "center" },
 });
