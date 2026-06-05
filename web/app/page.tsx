@@ -43,7 +43,6 @@ export default function HomePage() {
       .then(setRaw)
       .catch(() => setError('Даалгаврыг татахад алдаа гарлаа.'))
       .finally(() => setLoading(false));
-
     fetchReport(today)
       .then((r) => setInsight(r.summary ?? ''))
       .catch(() => setInsight(''))
@@ -51,38 +50,33 @@ export default function HomePage() {
   }, []);
 
   async function toggleTask(id: string, completed: boolean) {
-    const status = completed ? 'done' : 'pending';
-    const updated = await updateTask(id, { status });
+    const updated = await updateTask(id, { status: completed ? 'done' : 'pending' });
     setRaw((prev) => prev.map((t) => (t._id === id ? updated : t)));
   }
 
-  const todayTasks = raw
-    .filter((t) => !t.due || t.due.startsWith(today))
-    .map(toFrontendTask);
-
+  const todayTasks = raw.filter((t) => !t.due || t.due.startsWith(today)).map(toFrontendTask);
   const upcomingTasks: UpcomingTask[] = raw
     .filter((t) => t.due && t.due > today && t.status !== 'done')
     .sort((a, b) => a.due.localeCompare(b.due))
     .slice(0, 5)
     .map(toUpcomingTask);
-
   const statsData = raw.map((t) => ({ completed: t.status === 'done' }));
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Ачааллаж байна...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
+        <p className="text-gray-400 dark:text-slate-500 text-sm">Ачааллаж байна...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-200">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Хяналтын самбар</h1>
-            <p className="text-sm text-gray-500 mt-1">Өнөөдрийн даалгаврын тойм</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Хяналтын самбар</h1>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Өнөөдрийн даалгаврын тойм</p>
           </div>
           <button
             onClick={() => setShowModal(true)}
@@ -94,7 +88,7 @@ export default function HomePage() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-red-600 text-sm">
+          <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 text-red-600 dark:text-red-400 text-sm">
             {error}
           </div>
         )}
