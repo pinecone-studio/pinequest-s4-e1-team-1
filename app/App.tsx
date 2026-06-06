@@ -17,6 +17,7 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import AboutScreen from "./src/screens/AboutScreen";
 import AccountSettingsScreen from "./src/screens/AccountSettingsScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
+import HelpScreen from "./src/screens/HelpScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,11 @@ function SettingsStackNavigator() {
         name="AboutScreen"
         component={AboutScreen}
         options={{ title: "Аппликейшний Тайлбар" }}
+      />
+      <Stack.Screen
+        name="HelpScreen"
+        component={HelpScreen}
+        options={{ title: "Туслалцаа & Дэмжлэг" }}
       />
     </Stack.Navigator>
   );

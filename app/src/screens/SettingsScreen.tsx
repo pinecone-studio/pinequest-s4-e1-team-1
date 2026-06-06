@@ -88,8 +88,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       iconName: "help-circle",
       title: "Туслалцаа & Дэмжлэг",
       description: "Асуулт-хариулт ба дэмжлэгтэй холбоо барих",
-      onPress: () =>
-        Alert.alert("Удахгүй ирэх байна", "Туслалцаа & дэмжлэг удахгүй байх болно"),
+      onPress: () => navigation.navigate("HelpScreen" as any),
     },
     {
       iconName: "info",
