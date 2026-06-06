@@ -6,13 +6,154 @@
   --background: #f9fafb;
   --foreground: #111827;
 }
-
 .dark {
   --background: #0f172a;
   --foreground: #f1f5f9;
 }
-
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* ── Aurora background layers ─────────────────────────────────────── */
+.aurora-layer {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+.aurora-1 {
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse, rgba(124,58,237,.55) 0%, transparent 70%);
+  top: -220px; left: -180px;
+  animation: a1 17s ease-in-out infinite;
+}
+.aurora-2 {
+  width: 700px; height: 500px;
+  background: radial-gradient(ellipse, rgba(219,39,119,.45) 0%, transparent 70%);
+  top: 25%; right: -160px;
+  animation: a2 22s ease-in-out infinite;
+}
+.aurora-3 {
+  width: 650px; height: 650px;
+  background: radial-gradient(ellipse, rgba(14,165,233,.35) 0%, transparent 70%);
+  bottom: 8%; left: 12%;
+  animation: a3 14s ease-in-out infinite;
+}
+.aurora-4 {
+  width: 500px; height: 400px;
+  background: radial-gradient(ellipse, rgba(16,185,129,.3) 0%, transparent 70%);
+  top: 55%; left: 55%;
+  animation: a4 20s ease-in-out infinite;
+}
+
+@keyframes a1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(70px,50px) scale(1.1); }
+  66%     { transform: translate(-50px,-70px) scale(.9); }
+}
+@keyframes a2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(-60px,70px) scale(1.08); }
+  66%     { transform: translate(80px,-50px) scale(.93); }
+}
+@keyframes a3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50%     { transform: translate(60px,-80px) scale(1.12); }
+}
+@keyframes a4 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(-80px,40px) scale(1.06); }
+  66%     { transform: translate(50px,-50px) scale(.96); }
+}
+
+/* ── Gradient text (animated) ─────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #a78bfa 0%, #f472b6 50%, #67e8f9 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gtxt 6s ease infinite;
+}
+@keyframes gtxt {
+  0%,100% { background-position: 0% 50%; }
+  50%     { background-position: 100% 50%; }
+}
+
+/* ── Glass card ───────────────────────────────────────────────────── */
+.glass-card {
+  background: rgba(255,255,255,.025);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* ── Wave bars (mic animation) ────────────────────────────────────── */
+.wave-bar {
+  animation: wave .9s ease-in-out infinite alternate;
+  transform-origin: bottom;
+}
+@keyframes wave {
+  from { transform: scaleY(.2); }
+  to   { transform: scaleY(1); }
+}
+
+/* ── Task appear ──────────────────────────────────────────────────── */
+.task-appear {
+  animation: fup .4s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* ── Fade up ──────────────────────────────────────────────────────── */
+@keyframes fup {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Ping ring (mic pulse) ────────────────────────────────────────── */
+.ping-ring {
+  animation: pring 1.5s ease-out infinite;
+}
+@keyframes pring {
+  0%   { transform: scale(1); opacity: .55; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ── Float ────────────────────────────────────────────────────────── */
+.float {
+  animation: float 7s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-16px); }
+}
+
+/* ── Animated gradient border (CTA card) ─────────────────────────── */
+.anim-border {
+  background: linear-gradient(90deg,#7c3aed,#db2777,#0ea5e9,#7c3aed);
+  background-size: 300% 100%;
+  animation: aborder 4s linear infinite;
+}
+@keyframes aborder {
+  from { background-position: 0% 0; }
+  to   { background-position: 300% 0; }
+}
+
+/* ── Shimmer (card hover sheen) ───────────────────────────────────── */
+.sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,.06) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform .5s ease;
+}
+.sheen:hover::after {
+  transform: translateX(100%);
+}
+
+/* ── Hide cursor on touch devices ────────────────────────────────── */
+@media (hover: none) {
+  .custom-cursor { display: none !important; }
 }
