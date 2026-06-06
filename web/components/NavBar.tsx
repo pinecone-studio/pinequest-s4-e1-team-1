@@ -54,7 +54,7 @@ export default function NavBar() {
   const accountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDark(document.documentElement.getAttribute("data-theme") === "dark");
+    setDark(document.documentElement.classList.contains("dark"));
   }, []);
 
   useEffect(() => {
@@ -70,10 +70,7 @@ export default function NavBar() {
 
   function toggleTheme() {
     const isDark = !dark;
-    document.documentElement.setAttribute(
-      "data-theme",
-      isDark ? "dark" : "light",
-    );
+    document.documentElement.classList.toggle("dark", isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
     setDark(isDark);
   }
