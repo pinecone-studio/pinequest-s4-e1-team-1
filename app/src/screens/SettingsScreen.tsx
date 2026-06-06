@@ -60,41 +60,41 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const settingItems: SettingItem[] = [
     {
       iconName: "user",
-      title: "Account Settings",
-      description: "Name, email & password",
+      title: "Бүртгэлийн Тохиргоо",
+      description: "Нэр, И-мэйл, нууц үг",
       onPress: () => navigation.navigate("AccountSettings" as any),
     },
     {
       iconName: "moon",
-      title: isDark ? "Dark mode" : "Light mode",
-      description: "Appearance theme",
+      title: isDark ? "Хар горим" : "Цагаан горим",
+      description: "Дэлгэцийн сэдэв",
       onPress: toggleTheme,
     },
     {
       iconName: "lock",
-      title: "Privacy & Security",
-      description: "Data protection & privacy",
+      title: "Нууцлал & Аюулгүй Байдал",
+      description: "Өгөгдлийн хамгаалалт",
       onPress: () =>
-        Alert.alert("Coming Soon", "Privacy & security settings will be available soon"),
+        Alert.alert("Удахгүй", "Нууцлалын тохиргоо удахгүй нэмэгдэх болно"),
     },
     {
       iconName: "globe",
-      title: "Language",
-      description: "Select your language",
+      title: "Хэл",
+      description: "Таны хэлийг сонгоно уу",
       onPress: () =>
-        Alert.alert("Coming Soon", "Language settings will be available soon"),
+        Alert.alert("Удахгүй", "Хэлний тохиргоо удахгүй нэмэгдэх болно"),
     },
     {
       iconName: "help-circle",
-      title: "Help & Support",
-      description: "FAQs and contact support",
+      title: "Туслалцаа & Дэмжлэг",
+      description: "Түгээмэл асуултууд",
       onPress: () =>
-        Alert.alert("Coming Soon", "Help & support will be available soon"),
+        Alert.alert("Удахгүй", "Туслалцаа удахгүй нэмэгдэх болно"),
     },
     {
       iconName: "info",
-      title: "About",
-      description: "App version & info",
+      title: "Аппликейшний Тайлбар",
+      description: "Хувилбар & мэдээлэл",
       onPress: () => navigation.navigate("AboutScreen" as any),
     },
   ];
@@ -104,7 +104,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       style={[s.container, { backgroundColor: C.bg }]}
       contentContainerStyle={s.contentContainer}
     >
-      <Text style={[s.title, { color: C.text }]}>Settings</Text>
+      <Text style={[s.title, { color: C.text }]}>Тохиргоо</Text>
 
       <View style={[s.settingsGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
         {settingItems.map((item, index) => (
@@ -142,7 +142,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         onPress={handleLogout}
       >
         <Feather name="log-out" size={18} color={C.textSec} />
-        <Text style={[s.logoutText, { color: C.textSec }]}>Log out</Text>
+        <Text style={[s.logoutText, { color: C.textSec }]}>Гарах</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -155,11 +155,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         ) : (
           <>
             <Feather name="trash-2" size={18} color="#dc2626" />
-            <Text style={s.deleteText}>Delete account</Text>
+            <Text style={s.deleteText}>Бүртгэл устгах</Text>
           </>
         )}
       </TouchableOpacity>
-      <Text style={[s.deleteHint, { color: C.textMuted }]}>Cannot be undone</Text>
+      <Text style={[s.deleteHint, { color: C.textMuted }]}>Устгасны дараа буцаах боломжгүй</Text>
     </ScrollView>
   );
 }
