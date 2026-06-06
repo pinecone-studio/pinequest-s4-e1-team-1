@@ -105,6 +105,7 @@ function AppTabs() {
         >
           <Tab.Screen name="Record" component={RecordScreen} options={{
             title: 'Бичих',
+            headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <View style={{ alignItems: 'center', justifyContent: 'center', width: 34, height: 34,
                 borderRadius: 17, backgroundColor: focused ? '#6366f1' : 'transparent',
@@ -115,6 +116,7 @@ function AppTabs() {
           }} />
           <Tab.Screen name="Tasks" component={TasksScreen} options={{
             title: 'Даалгавар',
+            headerShown: false,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name={focused ? 'checkbox' : 'checkbox-outline'} size={24} color={color} />
             ),
