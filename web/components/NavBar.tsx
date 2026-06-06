@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { updatePassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -50,6 +52,10 @@ export default function NavBar() {
   const [showNotif, setShowNotif] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [showRecord, setShowRecord] = useState(false);
+  const [showPwForm, setShowPwForm] = useState(false);
+  const [newPw, setNewPw] = useState('');
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +82,23 @@ export default function NavBar() {
     );
     localStorage.setItem("theme", isDark ? "dark" : "light");
     setDark(isDark);
+  }
+
+  async function handleChangePassword() {
+    if (!newPw.trim()) return;
+    if (newPw.length < 6) { setPwMsg({ text: '6-аас дээш тэмдэгт оруулна уу.', ok: false }); return; }
+    setPwLoading(true); setPwMsg(null);
+    try {
+      const u = auth.currentUser;
+      if (!u) throw new Error('Нэвтрээгүй байна.');
+      await updatePassword(u, newPw);
+      setNewPw(''); setShowPwForm(false);
+      setPwMsg({ text: 'Нууц үг амжилттай солигдлоо.', ok: true });
+    } catch {
+      setPwMsg({ text: 'Нууц үг солиход алдаа гарлаа. Дахин нэвтэрч оролдоно уу.', ok: false });
+    } finally {
+      setPwLoading(false);
+    }
   }
 
   function handleNotifClick(id: string) {
@@ -277,12 +300,44 @@ export default function NavBar() {
                 </div>
               </div>
 
+              {/* Password change */}
+              <div className="px-3 pt-3 pb-2 border-b border-gray-100 dark:border-slate-700">
+                {!showPwForm ? (
+                  <button onClick={() => { setShowPwForm(true); setPwMsg(null); }}
+                    className="w-full text-sm font-medium text-indigo-600 dark:text-indigo-400 py-2 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
+                    Нууц үг солих
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      type="password"
+                      value={newPw}
+                      onChange={e => setNewPw(e.target.value)}
+                      placeholder="Шинэ нууц үг (6+ тэмдэгт)"
+                      className="w-full border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100 placeholder-gray-300 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={handleChangePassword} disabled={pwLoading}
+                        className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors disabled:opacity-60">
+                        {pwLoading ? 'Хадгалж байна...' : 'Хадгалах'}
+                      </button>
+                      <button onClick={() => { setShowPwForm(false); setNewPw(''); setPwMsg(null); }}
+                        className="flex-1 py-2 rounded-xl border border-gray-200 dark:border-slate-600 text-xs font-medium text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        Болих
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {pwMsg && (
+                  <p className={`text-xs mt-1.5 text-center ${pwMsg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+                    {pwMsg.text}
+                  </p>
+                )}
+              </div>
+
               <div className="p-3">
                 <button
-                  onClick={() => {
-                    setShowAccount(false);
-                    logout();
-                  }}
+                  onClick={() => { setShowAccount(false); logout(); }}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 text-sm font-medium transition-colors"
                 >
                   <LogOut size={15} />
