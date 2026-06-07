@@ -28,13 +28,13 @@ export default function PrivacySecurityScreen({ navigation }: PrivacySecurityScr
       icon: "file-text",
       title: "Privacy Policy",
       description: "Бидний нууцлалын бодлого",
-      onPress: () => Linking.openURL("https://pinequest.io/privacy"),
+      onPress: () => Linking.openURL("https://terms-beryl.vercel.appp/rivacy"),
     },
     {
       icon: "file-text",
       title: "Terms of Service",
       description: "Үйлчилгээний нөхцөл",
-      onPress: () => Linking.openURL("https://pinequest.io/terms"),
+      onPress: () => Linking.openURL("https://terms-beryl.vercel.app/terms"),
     },
     {
       icon: "key",
