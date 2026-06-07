@@ -28,7 +28,7 @@ export default function PrivacySecurityScreen({ navigation }: PrivacySecurityScr
       icon: "file-text",
       title: "Privacy Policy",
       description: "Бидний нууцлалын бодлого",
-      onPress: () => Linking.openURL("https://terms-beryl.vercel.appp/rivacy"),
+      onPress: () => Linking.openURL("https://terms-beryl.vercel.app/privacy"),
     },
     {
       icon: "file-text",
