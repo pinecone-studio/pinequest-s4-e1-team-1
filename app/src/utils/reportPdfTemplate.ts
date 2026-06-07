@@ -28,14 +28,8 @@ function infoBox(cls: string, title: string, body: string) {
   return `<div class="info-box ${cls}"><div class="info-box-title">${title}</div><div class="info-box-body">${body}</div></div>`;
 }
 
-function pageHeader(title: string, page: number, total: number) {
-  return `<div class="page-header">
-    <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">${title}</span></div>
-    <span class="page-header-right">PineQuest · ${page}/${total}</span>
-  </div>`;
-}
-function pageFooter(date: string) {
-  return `<div class="page-footer"><span class="page-footer-txt">PineQuest Executive Report</span><span class="page-footer-txt">© ${new Date().getFullYear()} · Нууцлал</span><span class="page-footer-txt">${date}</span></div>`;
+function sectionTitle(label: string) {
+  return `<div class="section-title">${label}</div>`;
 }
 
 export function buildReportHtml(d: ReportData): string {
@@ -62,10 +56,14 @@ export function buildReportHtml(d: ReportData): string {
     <div class="cover-bottom"><span class="cover-conf">CONFIDENTIAL · FOR MANAGEMENT USE ONLY</span><span class="cover-page">Үүсгэсэн: ${now}</span></div>
   </div>`;
 
-  const page2 = `<div class="page content-page" style="position:relative">
-    ${pageHeader('KPI & ГҮЙЦЭТГЭЛ', 2, 3)}
+  const content = `<div class="page content-page">
+    <div class="page-header">
+      <div class="page-header-left"><div class="page-header-dot"></div><span class="page-header-title">ГҮЙЦЭТГЭЛ & ШИНЖИЛГЭЭ</span></div>
+      <span class="page-header-right">PineQuest · 2/2</span>
+    </div>
+
     <div class="section">
-      <div class="section-title">Гол үзүүлэлтүүд (KPI)</div>
+      ${sectionTitle('Гол үзүүлэлтүүд (KPI)')}
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-val" style="color:#6C47FF">${total}</div><div class="kpi-lbl">Нийт</div></div>
         <div class="kpi-card"><div class="kpi-val" style="color:#16a34a">${d.completedTaskCount}</div><div class="kpi-lbl">Гүйцэтгэл</div></div>
@@ -73,34 +71,41 @@ export function buildReportHtml(d: ReportData): string {
         <div class="kpi-card"><div class="kpi-val" style="color:#0891b2">${completion}%</div><div class="kpi-lbl">Хувь</div></div>
       </div>
     </div>
-    <div class="section">
-      <div class="section-title">Ач холбогдлоор шинжилгээ</div>
-      ${progBar('Өндөр ач холбогдолтой', d.highCount, total, '#ef4444')}
-      ${progBar('Дунд ач холбогдолтой', d.mediumCount, total, '#f59e0b')}
-      ${progBar('Бага ач холбогдолтой', d.lowCount, total, '#6b7280')}
+
+    <div class="two-col">
+      <div class="col">
+        ${sectionTitle('Ач холбогдлоор')}
+        ${progBar('Өндөр', d.highCount, total, '#ef4444')}
+        ${progBar('Дунд', d.mediumCount, total, '#f59e0b')}
+        ${progBar('Бага', d.lowCount, total, '#6b7280')}
+      </div>
+      <div class="col">
+        ${sectionTitle('Хүснэгт')}
+        <table class="table">
+          <thead><tr><th>Төлөв</th><th>Тоо</th><th>%</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-done">&#10003; Гүйцэтгэсэн</span></td><td>${d.completedTaskCount}</td><td>${pct(d.completedTaskCount, total)}%</td></tr>
+            <tr><td><span class="badge badge-pending">&#9675; Хүлээгдэж буй</span></td><td>${d.pendingTaskCount}</td><td>${pct(d.pendingTaskCount, total)}%</td></tr>
+            <tr><td><span class="badge badge-total">&#9642; Бүртгэл</span></td><td>${d.entryCount}</td><td>&#8212;</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
     <div class="section">
-      <div class="section-title">Даалгаврын хүснэгт</div>
-      <table class="table">
-        <thead><tr><th>Төлөв</th><th>Тоо</th><th>Хувь</th></tr></thead>
-        <tbody>
-          <tr><td><span class="badge badge-done">&#10003; Гүйцэтгэсэн</span></td><td>${d.completedTaskCount}</td><td>${pct(d.completedTaskCount, total)}%</td></tr>
-          <tr><td><span class="badge badge-pending">&#9675; Хүлээгдэж буй</span></td><td>${d.pendingTaskCount}</td><td>${pct(d.pendingTaskCount, total)}%</td></tr>
-          <tr><td><span class="badge badge-total">&#9642; Нийт бүртгэл</span></td><td>${d.entryCount}</td><td>&#8212;</td></tr>
-        </tbody>
-      </table>
+      ${sectionTitle('AI Шинжилгээ & Зөвлөмж')}
+      ${infoBox('purple', 'Товч дүгнэлт — Executive Summary', d.executiveSummary)}
+      ${infoBox('blue',   'Шинжилгээ & Хандлага — Insights',  d.insights)}
+      ${infoBox('red',    'Эрсдэл & Саатал — Risks',           d.risks)}
+      ${infoBox('green',  'Зөвлөмж — Recommendations',         d.recommendations)}
     </div>
-    ${pageFooter(now)}
+
+    <div class="doc-footer">
+      <span>PineQuest Executive Report</span>
+      <span>© ${new Date().getFullYear()} · Нууцлал</span>
+      <span>${now}</span>
+    </div>
   </div>`;
 
-  const page3 = `<div class="page content-page" style="position:relative">
-    ${pageHeader('AI ШИНЖИЛГЭЭ & ЗӨВЛӨМЖ', 3, 3)}
-    ${infoBox('purple', 'Товч дүгнэлт — Executive Summary', d.executiveSummary)}
-    ${infoBox('blue',   'Шинжилгээ & Хандлага — Insights',  d.insights)}
-    ${infoBox('red',    'Эрсдэл & Саатал — Risks',           d.risks)}
-    ${infoBox('green',  'Зөвлөмж — Recommendations',         d.recommendations)}
-    ${pageFooter(now)}
-  </div>`;
-
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${PDF_CSS}</style></head><body>${cover}${page2}${page3}</body></html>`;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${PDF_CSS}</style></head><body>${cover}${content}</body></html>`;
 }
