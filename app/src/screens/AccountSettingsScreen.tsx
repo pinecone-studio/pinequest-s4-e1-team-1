@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "expo-vector-icons";
 import { auth } from "../firebase";
-import { updateProfile, updatePassword } from "firebase/auth";
+import { updateProfile } from "firebase/auth";
 import { useTheme } from "../theme/ThemeContext";
 
 export default function AccountSettingsScreen() {
@@ -19,9 +19,7 @@ export default function AccountSettingsScreen() {
   const user = auth.currentUser;
   const [displayName, setDisplayName] = useState(user?.displayName || "");
   const [email] = useState(user?.email || "");
-  const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPasswordField, setShowPasswordField] = useState(false);
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -38,27 +36,6 @@ export default function AccountSettingsScreen() {
     }
   };
 
-  const handleChangePassword = async () => {
-    if (!user || !newPassword.trim()) {
-      Alert.alert("Анхааруулга", "Шинэ нууц үг оруулна уу");
-      return;
-    }
-    if (newPassword.length < 6) {
-      Alert.alert("Анхааруулга", "Нууц үг 6 эсвэл түүнээс дээш тэмдэгт байх ёстой");
-      return;
-    }
-    setLoading(true);
-    try {
-      await updatePassword(user, newPassword);
-      setNewPassword("");
-      setShowPasswordField(false);
-      Alert.alert("Амжилттай", "Нууц үг амжилттай өөрчлөгдлөө");
-    } catch (error: any) {
-      Alert.alert("Алдаа", error.message || "Нууц үг өөрчлөхэд алдаа гарлаа");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <ScrollView style={[s.container, { backgroundColor: C.bg }]} contentContainerStyle={s.content}>
@@ -104,61 +81,6 @@ export default function AccountSettingsScreen() {
         </View>
       </View>
 
-      <View style={s.section}>
-        <Text style={[s.sectionTitle, { color: C.text }]}>Нууц үг</Text>
-
-        {!showPasswordField ? (
-          <TouchableOpacity
-            style={[s.button, s.secondaryButton, { backgroundColor: C.surface, borderColor: C.border }]}
-            onPress={() => setShowPasswordField(true)}
-            disabled={loading}
-          >
-            <Text style={[s.secondaryButtonText, { color: C.accent }]}>Нууц үг өөрчлөх</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={[s.infoCard, { backgroundColor: C.surface, borderColor: C.border }]}>
-            <View style={s.fieldGroup}>
-              <Text style={[s.label, { color: C.textSec }]}>Шинэ Нууц үг</Text>
-              <TextInput
-                style={[s.input, { backgroundColor: C.surfaceAlt, borderColor: C.border, color: C.text }]}
-                placeholder="6+ тэмдэгт"
-                placeholderTextColor={C.textMuted}
-                secureTextEntry
-                value={newPassword}
-                onChangeText={setNewPassword}
-                editable={!loading}
-              />
-              <Text style={[s.hint, { color: C.textMuted }]}>6 эсвэл түүнээс дээш тэмдэгт байх ёстой</Text>
-            </View>
-
-            <View style={s.buttonGroup}>
-              <TouchableOpacity
-                style={[s.button, s.primaryButton, { flex: 1, backgroundColor: C.accent, borderColor: C.accent }]}
-                onPress={handleChangePassword}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <>
-                    <Feather name="check" size={18} color="#fff" />
-                    <Text style={s.buttonText}>Хадгалах</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[s.button, s.cancelButton, { flex: 1, backgroundColor: C.surface, borderColor: C.border }]}
-                onPress={() => { setShowPasswordField(false); setNewPassword(""); }}
-                disabled={loading}
-              >
-                <Feather name="x" size={18} color={C.textSec} />
-                <Text style={[s.cancelButtonText, { color: C.textSec }]}>Болих</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
 
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: C.text }]}>Бүртгэлийн Мэдээлэл</Text>

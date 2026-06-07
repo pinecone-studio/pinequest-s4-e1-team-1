@@ -61,7 +61,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     {
       iconName: "user",
       title: "Бүртгэлийн тохиргоо",
-      description: "Нэр, имэйл & нууц үг",
+      description: "Нэр, имэйл болон бусад мэдээллээ удирдах",
       onPress: () => navigation.navigate("AccountSettings" as any),
     },
     {
@@ -74,8 +74,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       iconName: "lock",
       title: "Нууцлал & Аюулгүй байдал",
       description: "Өгөгдлийн хамгаалалт & Нууцлал",
-      onPress: () =>
-        Alert.alert("Удахгүй ирэх байна", "Нууцлал & аюулгүй байдлын тохиргоо удахгүй байх болно"),
+      onPress: () => navigation.navigate("PrivacySecurity" as any),
     },
     {
       iconName: "globe",
@@ -144,21 +143,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         <Text style={[s.logoutText, { color: C.textSec }]}>Гарах</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={s.deleteBtn}
-        onPress={handleDeleteAccount}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#dc2626" />
-        ) : (
-          <>
-            <Feather name="trash-2" size={18} color="#dc2626" />
-            <Text style={s.deleteText}>Бүртгэл устгах</Text>
-          </>
-        )}
-      </TouchableOpacity>
-      <Text style={[s.deleteHint, { color: C.textMuted }]}>Буцаалгалгүй</Text>
+      
+      <Text style={[s.deleteHint, { color: C.textMuted }]}>2026</Text>
     </ScrollView>
   );
 }

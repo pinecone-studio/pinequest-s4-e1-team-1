@@ -18,6 +18,8 @@ import AboutScreen from "./src/screens/AboutScreen";
 import AccountSettingsScreen from "./src/screens/AccountSettingsScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
 import HelpScreen from "./src/screens/HelpScreen";
+import PrivacySecurityScreen from "./src/screens/PrivacySecurityScreen";
+import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -51,6 +53,16 @@ function SettingsStackNavigator() {
         name="HelpScreen"
         component={HelpScreen}
         options={{ title: "Туслалцаа & Дэмжлэг" }}
+      />
+      <Stack.Screen
+        name="PrivacySecurity"
+        component={PrivacySecurityScreen}
+        options={{ title: "Нууцлал & Аюулгүй байдал" }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: "Нууц үг өөрчлөх" }}
       />
     </Stack.Navigator>
   );
