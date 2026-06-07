@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { fetchTasks, Task } from "../api";
-import BottomNav from "../components/BottomNav";
 import { useTheme } from "../theme/ThemeContext";
 import { Colors } from "../theme/colors";
 
@@ -249,7 +248,7 @@ const tr = StyleSheet.create({
   prioText: { fontSize: 11, fontWeight: "600" },
 });
 
-export default function CalendarScreen({ navigation }: any) {
+export default function CalendarScreen() {
   const { colors: C } = useTheme();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -269,13 +268,7 @@ export default function CalendarScreen({ navigation }: any) {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      navigation.setOptions({ tabBarStyle: { display: "none" } });
-      load();
-      return () => navigation.setOptions({ tabBarStyle: undefined });
-    }, [load, navigation]),
-  );
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const byDate = useMemo(() => {
     const map: Record<string, Task[]> = {};
@@ -394,10 +387,8 @@ export default function CalendarScreen({ navigation }: any) {
           ))
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 20 }} />
       </ScrollView>
-
-      <BottomNav navigation={navigation} />
     </SafeAreaView>
   );
 }
