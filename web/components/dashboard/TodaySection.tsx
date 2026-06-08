@@ -37,10 +37,10 @@ function TaskCard({ task, onToggle, onUpdate, onDelete }: {
   function toggle(f: EditField) { setEditing(prev => prev === f ? null : f); }
 
   return (
-    <div className={`flex gap-3 p-4 rounded-xl border transition-colors ${
+    <div className={`flex gap-3 p-4 rounded-xl border transition-all duration-200 group ${
       task.completed
-        ? "border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50"
-        : "border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+        ? "border-gray-100 dark:border-slate-800/80 bg-gray-50/50 dark:bg-slate-800/30"
+        : "border-gray-100 dark:border-slate-700/60 bg-white dark:bg-slate-800/60 hover:border-indigo-100 dark:hover:border-indigo-900/40 hover:shadow-sm"
     }`}>
       <button onClick={() => onToggle?.(task.id, !task.completed)} className="shrink-0 mt-0.5 cursor-pointer">
         {task.completed
@@ -133,19 +133,37 @@ export default function TodaySection({ tasks, onToggle, onUpdate, onDelete }: {
   onUpdate?: (id: string, fields: UpdateFields) => void;
   onDelete?: (id: string) => void;
 }) {
+  const done = tasks.filter(t => t.completed).length;
+
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-transparent dark:border-slate-700">
+    <div className="bg-white dark:bg-slate-800/80 rounded-2xl p-6 border border-gray-100 dark:border-slate-700/60">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="font-bold text-gray-900 dark:text-white text-lg">Өнөөдөр</h2>
-        <span className="text-xs font-medium bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 px-2.5 py-1 rounded-full">
+        <div>
+          <h2 className="font-bold text-gray-900 dark:text-white text-base">Өнөөдрийн даалгаврууд</h2>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+            {done}/{tasks.length} гүйцэтгэсэн
+          </p>
+        </div>
+        <span className="text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 px-3 py-1.5 rounded-full border border-indigo-100 dark:border-indigo-900/50">
           {tasks.length} төлөвлөгдсөн
         </span>
       </div>
-      <div className="flex flex-col gap-3">
-        {tasks.map(task => (
-          <TaskCard key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} />
-        ))}
-      </div>
+
+      {tasks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-slate-700/50 flex items-center justify-center">
+            <CheckCircle2 size={22} className="text-gray-200 dark:text-slate-600" />
+          </div>
+          <p className="text-sm text-gray-400 dark:text-slate-500 font-medium">Өнөөдөр даалгавар байхгүй</p>
+          <p className="text-xs text-gray-300 dark:text-slate-600">Дуут бичлэгээр даалгавар нэм</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2.5">
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} onToggle={onToggle} onUpdate={onUpdate} onDelete={onDelete} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
