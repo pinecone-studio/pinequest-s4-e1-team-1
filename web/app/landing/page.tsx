@@ -288,13 +288,14 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
 /* ─── App preview ──────────────────────────────────────────────────────────── */
 
 const STATIC = [
-  { title: "Математикийн даалгавар дуусгах", time: "20:00", done: false },
-  { title: "Дизайн багтай уулзалт", time: "15:30", done: false },
-  { title: "Өглөөний дасгал", time: "07:00", done: true },
+  { title: "Вэбсайтын дизайн сайжруулах", time: "14:00", done: false },
+  { title: "Өглөөний уулзалт", time: "10:30", done: false },
+  { title: "Кодын review хийх", time: "16:45", done: true },
+  { title: "Баланс хэрхэнгүүлэх", time: "13:15", done: false },
 ];
 const AI_OUT = [
-  "Математикийн даалгавар",
-  "Дизайн багтай уулзалт",
+  "Вэбсайтын дизайн сайжруулах",
+  "Өглөөний уулзалт",
   "Кодын review хийх",
 ];
 
@@ -344,64 +345,79 @@ function AppPreview() {
           </div>
         </div>
 
-        {/* stats bar */}
-        <div className="grid grid-cols-3 divide-x divide-white/5 border-b border-white/5">
+        {/* stats bar - Dashboard style */}
+        <div className="grid grid-cols-4 divide-x divide-white/8 border-b border-white/8 backdrop-blur-sm">
           {[
-            { val: "12", label: "Даалгавар", col: "#a78bfa" },
-            { val: "87%", label: "Гүйцэтгэл", col: "#34d399" },
-            { val: "3", label: "Сануулагч", col: "#f9a8d4" },
+            { val: "12", label: "Нийт даалгавар", col: "#a78bfa" },
+            { val: "8", label: "Дүүссэн", col: "#34d399" },
+            { val: "3", label: "Хүлээгдэж буй", col: "#f59e0b" },
+            { val: "87%", label: "Гүйцэтгэл", col: "#f9a8d4" },
           ].map(({ val, label, col }) => (
-            <div key={label} className="px-5 py-4">
-              <div className="text-2xl font-black" style={{ color: col }}>
-                {val}
-              </div>
-              <div className="text-[10px] text-white/25 mt-0.5 font-medium">
+            <div key={label} className="px-4 py-5 group/stat cursor-default transition-all duration-300 hover:bg-white/3">
+              <div className="text-[10px] text-white/40 font-medium uppercase tracking-wide mb-2">
                 {label}
+              </div>
+              <div
+                className="text-2xl font-black transition-transform duration-300 group-hover/stat:scale-110"
+                style={{ color: col, textShadow: `0 0 12px ${col}40` }}
+              >
+                {val}
               </div>
             </div>
           ))}
         </div>
 
+        {/* Header section with greeting */}
+        <div className="px-6 pt-5 pb-3 border-b border-white/8">
+          <div className="text-[14px] font-semibold text-white mb-1">
+            ☀️ Өглөө гов!
+          </div>
+          <div className="text-[12px] text-white/40">
+            Даваа, 6-р сарын 8 • 09:45
+          </div>
+        </div>
+
         {/* mic + task list */}
-        <div className="p-5 space-y-4">
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
+        <div className="p-6 space-y-5">
+          <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-4 py-3.5 border border-white/8 hover:border-white/15 transition-all duration-300">
+            <div className="relative shrink-0 group/mic">
               {mic && (
                 <>
-                  <div className="ping-ring absolute inset-0 rounded-full bg-pink-500/20" />
+                  <div className="ping-ring absolute inset-0 rounded-full bg-pink-500/30" />
                   <div
-                    className="ping-ring absolute inset-0 rounded-full bg-violet-500/15"
+                    className="ping-ring absolute inset-0 rounded-full bg-violet-500/20"
                     style={{ animationDelay: "500ms" }}
                   />
                 </>
               )}
               <button
-                className={`relative w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300 ${mic ? "scale-110" : "scale-100"}`}
+                className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg group-hover/mic:shadow-2xl ${mic ? "scale-110" : "scale-100 group-hover/mic:scale-105"}`}
                 style={{
                   background: mic
                     ? "linear-gradient(135deg,#db2777,#f59e0b)"
                     : "linear-gradient(135deg,#7c3aed,#db2777)",
+                  boxShadow: mic ? "0 0 30px rgba(219,39,119,.4)" : "0 0 20px rgba(124,58,237,.3)",
                 }}
               >
-                <Mic size={18} color="white" />
+                <Mic size={19} color="white" />
               </button>
             </div>
 
             <div className="flex-1">
-              <div className="text-[13px] font-semibold text-white/75">
+              <div className="text-[13px] font-semibold text-white/85">
                 {mic ? "Бичиж байна..." : "Дарж ярьж эхэл"}
               </div>
-              <div className="text-[11px] text-white/25 mt-0.5">
+              <div className="text-[11px] text-white/35 mt-0.5">
                 AI автоматаар боловсруулна
               </div>
             </div>
 
             {mic && (
-              <div className="flex items-end gap-0.75 h-6">
+              <div className="flex items-end gap-1 h-7">
                 {[4, 7, 5, 9, 3, 8, 5, 6, 4, 7].map((h, i) => (
                   <div
                     key={i}
-                    className="wave-bar w-0.75 rounded-full bg-violet-400"
+                    className="wave-bar w-1 rounded-full bg-gradient-to-t from-violet-400 to-pink-400"
                     style={{ height: h * 2.5, animationDelay: `${i * 60}ms` }}
                   />
                 ))}
@@ -409,39 +425,49 @@ function AppPreview() {
             )}
           </div>
 
-          <div className="space-y-1.5">
+          {/* Tasks section header */}
+          <div className="flex items-center justify-between mt-2">
+            <div className="text-[13px] font-semibold text-white/90">
+              Өнөөдрийн даалгаврууд
+            </div>
+            <div className="text-[11px] text-white/30">
+              {aiTasks.length > 0 ? `${aiTasks.length} даалгавар` : `${STATIC.length} даалгавар`}
+            </div>
+          </div>
+
+          <div className="space-y-2 mt-3">
             {aiTasks.length > 0
               ? aiTasks.map((t, i) => (
                   <div
                     key={t}
-                    className="task-appear flex items-center gap-3 px-3 py-2.5 rounded-xl border border-violet-500/20 bg-violet-500/6"
+                    className="task-appear flex items-center gap-3 px-4 py-3 rounded-xl border border-violet-500/30 bg-violet-500/8 hover:bg-violet-500/12 transition-all duration-300 group/task cursor-default"
                     style={{ animationDelay: `${i * 110}ms` }}
                   >
-                    <div className="w-3.5 h-3.5 rounded-full border border-violet-400/50 flex items-center justify-center shrink-0">
+                    <div className="w-4 h-4 rounded-full border-2 border-violet-400/60 flex items-center justify-center shrink-0 group-hover/task:border-violet-400 transition-colors">
                       <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
                     </div>
-                    <span className="text-[13px] text-white/60">{t}</span>
+                    <span className="text-[13px] text-white/70 group-hover/task:text-white/90 transition-colors font-medium flex-1">{t}</span>
                   </div>
                 ))
               : STATIC.map(({ title, time, done }) => (
                   <div
                     key={title}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/3 border border-white/3"
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-white/15 transition-all duration-300 group/task cursor-default"
                   >
                     {done ? (
                       <CheckCircle2
-                        size={15}
-                        className="text-emerald-500 shrink-0"
+                        size={16}
+                        className="text-emerald-400 shrink-0 group-hover/task:text-emerald-300 transition-colors"
                       />
                     ) : (
-                      <Circle size={15} className="text-white/20 shrink-0" />
+                      <Circle size={16} className="text-white/30 shrink-0 group-hover/task:text-white/40 transition-colors" />
                     )}
                     <span
-                      className={`flex-1 text-[13px] ${done ? "line-through text-white/20" : "text-white/50"}`}
+                      className={`flex-1 text-[13px] transition-all duration-300 ${done ? "line-through text-white/25 group-hover/task:text-white/35" : "text-white/60 group-hover/task:text-white/75"}`}
                     >
                       {title}
                     </span>
-                    <span className="text-[11px] text-white/20 shrink-0">
+                    <span className="text-[11px] text-white/25 shrink-0 group-hover/task:text-white/35 transition-colors">
                       {time}
                     </span>
                   </div>
@@ -546,10 +572,37 @@ function FeatCard({
 export default function LandingPage() {
   const { ref: cursorRef, ring: ringRef } = useCursor();
   const [scrolled, setScrolled] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
   const { ref: heroRef, vis: heroVis } = useInView(0.05);
 
   useEffect(() => {
-    const fn = () => setScrolled(window.scrollY > 20);
+    let ticking = false;
+
+    const updateHeader = () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingDown = currentScrollY > lastScrollYRef.current;
+      const scrollDelta = Math.abs(currentScrollY - lastScrollYRef.current);
+
+      // Show/hide header based on scroll direction (with minimum scroll delta to avoid flickering)
+      if (currentScrollY > 60 && scrollDelta > 2) {
+        setHeaderVisible(!isScrollingDown);
+      } else if (currentScrollY <= 60) {
+        setHeaderVisible(true);
+      }
+
+      setScrolled(currentScrollY > 20);
+      lastScrollYRef.current = currentScrollY;
+      ticking = false;
+    };
+
+    const fn = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateHeader);
+        ticking = true;
+      }
+    };
+
     window.addEventListener("scroll", fn, { passive: true });
     return () => window.removeEventListener("scroll", fn);
   }, []);
@@ -622,48 +675,79 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* ── Nav ───────────────────────────────────────────────────── */}
+      {/* ── Nav ─ Apple Style ───────────────────────────────────────── */}
       <header
-        className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 sm:px-10 h-15.5 transition-all duration-500 ${scrolled ? "bg-[rgba(3,3,9,.75)] backdrop-blur-2xl border-b border-white/5" : ""}`}
+        className={`fixed top-0 inset-x-0 z-50 flex items-center justify-center px-4 sm:px-6 h-16 transition-colors duration-300 ${
+          scrolled
+            ? "bg-[rgba(3,3,9,.6)] backdrop-blur-md border-b border-white/5"
+            : "bg-transparent"
+        }`}
+        style={{
+          transform: headerVisible ? "translateY(0)" : "translateY(-100%)",
+          transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1), background-color 300ms ease, border-color 300ms ease",
+          willChange: "transform",
+        }}
       >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-7 h-7 rounded-xl flex items-center justify-center shadow-lg shrink-0"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
-          >
-            <Sparkles size={13} color="white" />
-          </div>
-          <span className="font-black text-[15px] tracking-tight">
-            PineQuest
-          </span>
-        </div>
-
-        <nav className="hidden md:flex items-center gap-7">
-          {["Онцлог", "Хэрхэн ажилладаг", "Үнэлгээ"].map((item) => (
-            <a
-              key={item}
-              href="#"
-              className="text-[13px] text-white/35 hover:text-white transition-colors duration-200"
+        {/* Max width container for Apple-like design */}
+        <div className="w-full max-w-6xl px-4 sm:px-8 flex items-center justify-between">
+          {/* Logo */}
+          <Link href="#" className="flex items-center gap-2 shrink-0 group/logo">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300"
+              style={{
+                background: "linear-gradient(135deg,#7c3aed,#db2777)",
+              }}
             >
-              {item}
-            </a>
-          ))}
-        </nav>
+              <Sparkles size={16} color="white" />
+            </div>
+            <span className="font-black text-[16px] tracking-tight text-white hidden sm:inline">
+              PineQuest
+            </span>
+          </Link>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden sm:block text-[13px] text-white/35 hover:text-white transition-colors"
-          >
-            Нэвтрэх
-          </Link>
-          <Link
-            href="/login"
-            className="relative text-[13px] font-bold text-white px-5 py-2 rounded-full overflow-hidden"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
-          >
-            Үнэгүй эхлэх
-          </Link>
+          {/* Center Navigation - Apple Style */}
+          <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
+            {[
+              { label: "Онцлог", href: "#features" },
+              { label: "Хэрхэн", href: "#how-it-works" },
+              { label: "Үнэлгээ", href: "#testimonials" },
+            ].map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className={`text-sm font-medium transition-all duration-300 ${
+                  scrolled
+                    ? "text-white/60 hover:text-white"
+                    : "text-white/50 hover:text-white"
+                }`}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          {/* Right Side - CTA */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/login"
+              className={`text-sm font-medium transition-all duration-300 hidden sm:block ${
+                scrolled ? "text-white/60 hover:text-white" : "text-white/50 hover:text-white"
+              }`}
+            >
+              Нэвтрэх
+            </Link>
+            <Link
+              href="/login"
+              className="relative group text-sm font-semibold text-white px-6 py-2 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              style={{
+                background: "linear-gradient(135deg,#7c3aed,#db2777)",
+              }}
+            >
+              <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+              <span className="relative">Эхлэх</span>
+              <ArrowRight size={14} className="relative group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -671,75 +755,88 @@ export default function LandingPage() {
         {/* ── Hero ──────────────────────────────────────────────── */}
         <section
           ref={heroRef}
-          className="flex flex-col items-center text-center px-6 pt-36 pb-4"
+          className="flex flex-col items-center text-center px-6 pt-28 pb-4"
         >
+          {/* Premium badge */}
           <div
-            className={`inline-flex items-center gap-2 text-[11px] font-semibold border border-violet-500/25 bg-violet-500/10 text-violet-300 rounded-full px-4 py-1.5 mb-8 transition-all duration-700 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            className={`inline-flex items-center gap-2 text-[11px] font-semibold border border-violet-500/30 bg-violet-500/15 text-violet-300 rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm transition-all duration-700 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
               <span className="relative rounded-full h-2 w-2 bg-violet-400" />
             </span>
-            AI-тай бүтээмжтэй ажиллах шинэ арга
+            ✨ AI-тай бүтээмжтэй ажиллах шинэ арга
           </div>
 
+          {/* Main heading with gradient effect */}
           <h1
-            className={`text-[clamp(2.8rem,8vw,5.6rem)] font-black leading-[1.02] tracking-tight mb-6 transition-all duration-700 delay-75 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
+            className={`text-[clamp(2.8rem,8vw,5.6rem)] font-black leading-[1.02] tracking-tight mb-8 transition-all duration-700 delay-75 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
           >
-            <span className="block text-white">
+            <span className="block text-white drop-shadow-lg">
               <ScrambleText text="Ярьж тэмдэглэ." visible={heroVis} />
             </span>
-            <span className="block gradient-text">
+            <span className="block gradient-text drop-shadow-lg" style={{
+              textShadow: '0 0 30px rgba(124,58,237,.3), 0 0 60px rgba(219,39,119,.2)'
+            }}>
               <ScrambleText text="AI бүгдийг" visible={heroVis} />
             </span>
-            <span className="block text-white">
+            <span className="block text-white drop-shadow-lg">
               <ScrambleText text="зохион байгуулна." visible={heroVis} />
             </span>
           </h1>
 
+          {/* Subtitle with enhanced styling */}
           <p
-            className={`text-[17px] text-white/38 max-w-115 leading-relaxed mb-10 transition-all duration-700 delay-150 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            className={`text-[17px] text-white/45 max-w-115 leading-relaxed mb-12 transition-all duration-700 delay-150 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             Дуут бичлэгийг өгөхөд даалгавар, хуваарь, тайлан автоматаар үүснэ.
             <br className="hidden sm:block" /> Гар бичгийн хэрэг байхгүй.
           </p>
 
+          {/* CTA Buttons */}
           <div
             className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-700 delay-220 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             <MagBtn href="/login">
-              Үнэгүй эхлэх
+              🚀 Үнэгүй эхлэх
               <ArrowRight
                 size={15}
                 className="group-hover:translate-x-1 transition-transform"
               />
             </MagBtn>
             <MagBtn href="#features" outline>
-              Жишээ үзэх
+              👀 Жишээ үзэх
               <ChevronRight size={14} className="opacity-50" />
             </MagBtn>
           </div>
 
+          {/* User testimonial section */}
           <div
-            className={`flex items-center gap-3 mt-8 transition-all duration-700 delay-300 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
+            className={`flex flex-col items-center gap-4 mt-12 transition-all duration-700 delay-300 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
           >
-            <div className="flex -space-x-2">
+            <div className="flex -space-x-3">
               {(
                 ["#7c3aed", "#db2777", "#0ea5e9", "#10b981", "#f59e0b"] as const
               ).map((bg, i) => (
                 <div
                   key={i}
-                  className="w-7 h-7 rounded-full border-2 border-[#030309] flex items-center justify-center text-[10px] font-black text-white"
-                  style={{ background: bg }}
+                  className="w-9 h-9 rounded-full border-2 border-[#030309] flex items-center justify-center text-[11px] font-black text-white shadow-lg transition-all duration-300 hover:scale-110 hover:-translate-y-1 cursor-pointer"
+                  style={{
+                    background: bg,
+                    boxShadow: `0 4px 15px ${bg}40`,
+                  }}
+                  title={["Анхзул", "Батболд", "Оюун", "Нямдавай", "Тэмүүлэн"][i]}
                 >
                   {["А", "Б", "О", "Н", "Т"][i]}
                 </div>
               ))}
             </div>
-            <p className="text-[13px] text-white/32">
-              <span className="text-white font-semibold">2,400+</span> хүн өдөр
-              бүр ашигладаг
-            </p>
+            <div className="text-center">
+              <p className="text-[14px] text-white/40">
+                <span className="text-white/80 font-semibold block mb-1">2,400+ хүн</span>
+                өдөр бүр ашигладаг
+              </p>
+            </div>
           </div>
 
           <div
@@ -845,7 +942,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── How it works ──────────────────────────────────────── */}
-        <section className="relative py-24 px-6">
+        <section id="how-it-works" className="relative py-24 px-6">
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -930,7 +1027,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── Testimonials ──────────────────────────────────────── */}
-        <section className="relative py-24 px-6">
+        <section id="testimonials" className="relative py-24 px-6">
           <FadeUp className="text-center mb-14">
             <h2 className="text-[clamp(2rem,5vw,3.5rem)] font-black tracking-tight">
               Хэрэглэгчид <span className="gradient-text">ямар байна</span>?
