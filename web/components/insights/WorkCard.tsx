@@ -1,5 +1,6 @@
 import { FileText, BarChart2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { ReportData } from '@/lib/api';
+import PdfButton from './PdfButton';
 
 function fmt(iso: string) {
   const d = new Date(iso);
@@ -59,9 +60,10 @@ export default function WorkCard(p: ReportData) {
       <div className="relative bg-gradient-to-br from-[#5B3FE0] to-[#8B5CF6] rounded-2xl p-6 overflow-hidden">
         <div className="absolute -right-8 -top-8 w-36 h-36 rounded-full bg-white/[0.07]" />
         <div className="absolute -left-5 -bottom-8 w-28 h-28 rounded-full bg-white/[0.05]" />
-        <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest mb-1 relative z-10">
-          ГҮЙЦЭТГЭЛИЙН ТАЙЛАН
-        </p>
+        <div className="flex items-center justify-between relative z-10 mb-1">
+          <p className="text-xs font-extrabold text-white/80 uppercase tracking-widest">ГҮЙЦЭТГЭЛИЙН ТАЙЛАН</p>
+          <PdfButton data={p} />
+        </div>
         <p className="text-xs text-white/50 mb-4 relative z-10">{range}</p>
         <div className="flex items-baseline gap-2 mb-3 relative z-10">
           <span className="text-5xl font-black text-white">{pct}%</span>
