@@ -2,13 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import { fetchTasks, fetchReport, updateTask, deleteTask, BackendTask } from '@/lib/api';
-import { Plus } from 'lucide-react';
+import { Plus, Flame, Target, Zap } from 'lucide-react';
 import StatsRow from '@/components/dashboard/StatsRow';
 import TodaySection, { Task } from '@/components/dashboard/TodaySection';
 import SidePanel, { UpcomingTask } from '@/components/dashboard/SidePanel';
 import AddReminderModal from '@/components/dashboard/AddReminderModal';
 
 const today = new Date().toISOString().slice(0, 10);
+
+const WEEKDAYS_MN = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+const MONTHS_MN   = ['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+
+function formatDateMN(d: Date) {
+  return `${WEEKDAYS_MN[d.getDay()]}, ${MONTHS_MN[d.getMonth()]}ын ${d.getDate()}`;
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6)  return { text: 'Шөнийн мэнд',  emoji: '🌙', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
+  if (h < 12) return { text: 'Өглөөний мэнд', emoji: '🌅', from: '#3730a3', via: '#4f46e5', to: '#6d28d9' };
+  if (h < 17) return { text: 'Өдрийн мэнд',   emoji: '☀️', from: '#4338ca', via: '#5b21b6', to: '#6d28d9' };
+  if (h < 21) return { text: 'Оройн мэнд',    emoji: '🌆', from: '#4c1d95', via: '#5b21b6', to: '#3730a3' };
+  return             { text: 'Шөнийн мэнд',  emoji: '🌙', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
+}
 
 function toFrontendTask(t: BackendTask): Task {
   return {
@@ -78,7 +94,11 @@ export default function HomePage() {
     .sort((a, b) => a.due.localeCompare(b.due))
     .slice(0, 5)
     .map(toUpcomingTask);
-  const statsData = raw.map((t) => ({ completed: t.status === 'done' }));
+  const statsData  = raw.map((t) => ({ completed: t.status === 'done' }));
+  const focusTask  = raw.find((t) => t.status !== 'done' && t.priority === 'high') ?? raw.find((t) => t.status !== 'done');
+  const doneCount  = raw.filter((t) => t.status === 'done').length;
+  const allDone    = raw.length > 0 && doneCount === raw.length;
+  const greeting   = getGreeting();
 
   if (loading) {
     return (
@@ -91,19 +111,64 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 p-6 transition-colors duration-200">
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Хяналтын самбар</h1>
-            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Өнөөдрийн даалгаврын тойм</p>
+
+        {/* ── Greeting banner ── */}
+        <div className="relative rounded-2xl overflow-hidden p-6 text-white"
+          style={{ background: `linear-gradient(135deg, ${greeting.from} 0%, ${greeting.via} 50%, ${greeting.to} 100%)` }}>
+          <div className="absolute inset-0 opacity-10"
+            style={{ backgroundImage: 'radial-gradient(circle at 15% 50%, white 0%, transparent 50%), radial-gradient(circle at 85% 10%, white 0%, transparent 40%)' }} />
+          <div className="relative flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">{greeting.emoji}</span>
+                <span className="text-lg font-black tracking-tight">{greeting.text}!</span>
+              </div>
+              <p className="text-white/70 text-sm">{formatDateMN(new Date())}</p>
+              {allDone && (
+                <div className="mt-2 flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1 w-fit">
+                  <span className="text-base">🎉</span>
+                  <span className="text-xs font-bold">Бүх даалгавар дууслаа!</span>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-center bg-white/10 rounded-xl px-4 py-3">
+                <div className="text-2xl font-black">{doneCount}</div>
+                <div className="text-[10px] text-white/60 mt-0.5">Дуусгасан</div>
+              </div>
+              <button
+                onClick={() => setShowModal(true)}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all backdrop-blur-sm"
+              >
+                <Plus size={15} />
+                Нэмэх
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors"
-          >
-            <Plus size={16} />
-            Сануулагч нэмэх
-          </button>
         </div>
+
+        {/* ── Focus task ── */}
+        {focusTask && !allDone && (
+          <div className="relative rounded-2xl border border-indigo-100 dark:border-indigo-900/50 bg-white dark:bg-slate-800/80 p-4 flex items-center gap-4 overflow-hidden">
+            <div className="absolute left-0 inset-y-0 w-1 bg-linear-to-b from-indigo-500 to-violet-500 rounded-l-2xl" />
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center shrink-0">
+              {focusTask.priority === 'high' ? <Flame size={18} className="text-rose-500" /> : <Target size={18} className="text-indigo-500" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-[10px] font-bold text-indigo-500 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1">
+                  <Zap size={10} /> Өнөөдрийн фокус
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-gray-800 dark:text-slate-100 truncate">{focusTask.title}</p>
+            </div>
+            {focusTask.priority === 'high' && (
+              <span className="text-[10px] font-bold bg-rose-50 dark:bg-rose-950/60 text-rose-500 dark:text-rose-400 px-2.5 py-1 rounded-full shrink-0">
+                Өндөр
+              </span>
+            )}
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl px-4 py-3 text-red-600 dark:text-red-400 text-sm">
@@ -115,7 +180,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
           <TodaySection tasks={todayTasks} onToggle={toggleTask} onUpdate={handleUpdate} onDelete={handleDelete} />
-          <SidePanel upcoming={upcomingTasks} insight={insight} insightLoading={insightLoading} />
+          <SidePanel upcoming={upcomingTasks} insight={insight} insightLoading={insightLoading} completedToday={doneCount} />
         </div>
       </div>
 
