@@ -10,16 +10,14 @@ import {
   Calendar,
   BarChart2,
   Bell,
-  Sparkles,
   Moon,
   Sun,
   Clock,
   X,
   LogOut,
-  CheckCircle2,
-  CircleX,
   CalendarDays,
   Mic,
+  Activity,
 } from "lucide-react";
 import { useNotifications, formatTimeLeft } from "@/hooks/useNotifications";
 import RecordOverlay from "@/components/RecordOverlay";
@@ -92,11 +90,11 @@ export default function NavBar() {
       <nav className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-10 px-5 h-14 grid grid-cols-[auto_1fr_auto] items-center gap-3 transition-colors duration-200">
         {/* Left: logo + record */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="rounded-lg bg-indigo-600 w-7 h-7 flex items-center justify-center shrink-0">
-            <Sparkles size={14} color="white" />
+          <div className="rounded-lg w-7 h-7 flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}>
+            <Activity size={14} color="white" />
           </div>
           <h1 className="font-medium text-sm text-gray-900 dark:text-white hidden sm:block">
-            SmartTask AI
+            MonTask
           </h1>
           <div className="h-5 w-px bg-gray-200 dark:bg-slate-700 mx-1 hidden sm:block" />
           <button

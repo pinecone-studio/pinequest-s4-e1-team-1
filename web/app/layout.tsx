@@ -7,8 +7,8 @@ import AuthWrapper from '@/components/AuthWrapper';
 const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Товч',
-  description: 'Дуу бичлэгийг тэмдэглэл болгох апп',
+  title: 'MonTask',
+  description: 'AI-powered voice to task app for Mongolian speakers',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

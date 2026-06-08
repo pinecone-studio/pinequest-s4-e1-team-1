@@ -171,7 +171,7 @@ export default function SettingsScreen({ navigation }: { navigation: Nav }) {
           }
         </TouchableOpacity>
 
-        <Text style={[s.version, { color: C.textMuted }]}>VocAI v1.0.0 · 2026</Text>
+        <Text style={[s.version, { color: C.textMuted }]}>MonTask v1.0.0 · 2026</Text>
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>

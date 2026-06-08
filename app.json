@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "2f9fdb61-e411-44c6-b925-1181d801fbf4"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.namuun0521.pinequests4e1team1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}
