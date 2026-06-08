@@ -14,11 +14,7 @@ export default function HelpScreen() {
   const { colors: C } = useTheme();
 
   const handleEmailPress = () => {
-    Linking.openURL("mailto:record@yahoo.io?subject=Туслалцаа");
-  };
-
-  const handlePhonePress = () => {
-    Linking.openURL("tel:+97699125567");
+    Linking.openURL("mailto:turboldnamuun@gmail.com?subject=Туслалцаа");
   };
 
   return (
@@ -63,13 +59,8 @@ export default function HelpScreen() {
           colors={C}
         />
         <FAQItem
-          q="Өффлайнд ашиглаж болох уу?"
-          a="Тийм! Өффлайн горимд дуу бичих, даалгаврыг удирдах зэрэг гол функцүүд боломжтой."
-          colors={C}
-        />
-        <FAQItem
-          q="Найзуудтайгаа хуваалцаж болох уу?"
-          a="Одоо хэрэглэгчийн тохиргоо дээрх функц боломжтой биш гэхдээ удахгүй үзүүлнэ."
+          q="Гүйцэтгэлийн тайланг хэрхэн харах вэ?"
+          a="Доод цэсний 'Тайлан' хэсгээс өдөр, 7 хоног, сарын гүйцэтгэлийн дүн шинжилгээг харж болно."
           colors={C}
         />
       </View>
@@ -104,16 +95,9 @@ export default function HelpScreen() {
         </Text>
         <ContactCard
           icon="mail"
-          title="Имэйл"
-          description="temka@pinequest.io"
+          title="И-мэйл"
+          description="turboldnamuun@gmail.com"
           onPress={handleEmailPress}
-          colors={C}
-        />
-        <ContactCard
-          icon="phone"
-          title="Утасны дугаар"
-          description="+976 99 99 99 99"
-          onPress={handlePhonePress}
           colors={C}
         />
       </View>

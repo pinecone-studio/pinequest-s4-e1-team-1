@@ -16,17 +16,17 @@ export default function AboutScreen() {
     <ScrollView style={[s.container, { backgroundColor: C.bg }]} contentContainerStyle={s.content}>
       <View style={s.header}>
         <View style={[s.logo, { backgroundColor: C.accent }]}>
-          <Text style={s.logoText}>PQ</Text>
+          <Text style={s.logoText}>V</Text>
         </View>
-        <Text style={[s.appName, { color: C.text }]}>PineQuest</Text>
+        <Text style={[s.appName, { color: C.text }]}>VocAI</Text>
         <Text style={[s.version, { color: C.textMuted }]}>v1.0.0</Text>
       </View>
 
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: C.text }]}>Аппликейшний Тайлбар</Text>
         <Text style={[s.description, { color: C.textSec }]}>
-          PineQuest бол таны өнөөдрийн үйл ажиллагааг хэлээр бичиж авч, текст
-          болгон хувиргаж, даалгавар үүсгэх боломжтой ухаалаг тусламч юм.
+          VocAI бол таны өнөөдрийн үйл ажиллагааг хэлээр бичиж авч, AI ашиглан
+          даалгавар, хуваарь болгон зохион байгуулдаг ухаалаг тусламч юм.
         </Text>
       </View>
 
@@ -44,22 +44,19 @@ export default function AboutScreen() {
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: C.text }]}>Үндсэн Давхамга</Text>
         <InfoItem icon="layers"  title="Ухаалаг Бичлэг"       description="AI ашиглан таны үйлсийг автоматаар ангилж, хадгалдаг" colors={C} />
-        <InfoItem icon="shield"  title="Нууцлалын Хамгаалалт" description="Таны өгөгдөл бүхэлдээ аюулгүй хранилахдаа сохранилдаг" colors={C} />
-        <InfoItem icon="sync"    title="Автоматаар Синхронизац" description="Таны өгөгдөл бүх төхөөрөмжүүд дээр шинэхэн байдаг" colors={C} />
+        <InfoItem icon="shield"  title="Нууцлалын Хамгаалалт" description="Таны өгөгдөл шифрлэгдсэн байдлаар аюулгүй хадгалагдана" colors={C} />
+        <InfoItem icon="sync"    title="Клоудад хадгалагдана" description="Таны өгөгдөл Firebase клоуд дээр найдвартай хадгалагдана" colors={C} />
       </View>
 
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: C.text }]}>Түгээмэл Асуултууд</Text>
-        <FAQItem q="Миний дуу бичлэг нууцлагдаж байна уу?" a="Тийм, бүх дуу бичлэг 256-битийн шифрлэлтээр хамгаалагдана" colors={C} />
-        <FAQItem q="Үйл ажиллагаа эргүүлж авч болох уу?"  a="Тийм, Даалгавар цэсээс өмнөх үйл ажиллагаа хайж болно" colors={C} />
-        <FAQItem q="Өффлайнд ашиглаж болох уу?"           a="Тийм, өффлайн горимд гол функцүүд боломжтой" colors={C} />
+        <FAQItem q="Миний дуу бичлэг нууцлагдаж байна уу?" a="Тийм, таны өгөгдөл шифрлэгдсэн байдлаар Firebase дээр хадгалагдана" colors={C} />
+        <FAQItem q="Интернет холболт шаардлагатай юу?"     a="Тийм, дуу бичих болон AI боловсруулалт хийхэд интернет холболт шаардлагатай" colors={C} />
+        <FAQItem q="Өөр төхөөрөмж дээр ашиглаж болох уу?" a="Тийм, нэг аккаунтаар ямар ч iOS төхөөрөмж дээр нэвтрэж болно" colors={C} />
       </View>
 
       <View style={[s.footer, { borderTopColor: C.border }]}>
-        <Text style={[s.footerText, { color: C.textSec }]}>© 2026 PineQuest. Бүх эрх хуулиар хамгаалагдана.</Text>
-        <Text style={[s.footerText, s.subText, { color: C.textMuted }]}>
-          Та бидэнтэй холбоо барихыг хүсвэл temka@pinequest.io хаягаар илгээнэ үү
-        </Text>
+        <Text style={[s.footerText, { color: C.textSec }]}>© 2026 VocAI. Бүх эрх хуулиар хамгаалагдана.</Text>
       </View>
     </ScrollView>
   );

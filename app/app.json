@@ -1,16 +1,23 @@
 {
   "expo": {
-    "name": "Товч",
-    "slug": "tovch-app",
+    "name": "VocAI",
+    "slug": "vocai-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f0a1e"
+    },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "mn.tovch.app",
+      "bundleIdentifier": "com.vocai.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "Энэ апп таны яриаг тэмдэглэл болгоход микрофон ашиглана"
+        "NSMicrophoneUsageDescription": "Энэ апп таны яриаг тэмдэглэл болгоход микрофон ашиглана",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -31,7 +38,8 @@
     "plugins": [
       "expo-audio",
       "expo-sharing",
-      "expo-mail-composer"
+      "expo-mail-composer",
+      "expo-notifications"
     ]
   }
 }

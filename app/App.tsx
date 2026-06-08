@@ -20,6 +20,7 @@ import CalendarScreen from "./src/screens/CalendarScreen";
 import HelpScreen from "./src/screens/HelpScreen";
 import PrivacySecurityScreen from "./src/screens/PrivacySecurityScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
+import { useTaskNotifications } from "./src/hooks/useTaskNotifications";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -109,6 +110,7 @@ function App() {
 
 function AppTabs() {
   const { colors, isDark } = useTheme();
+  useTaskNotifications();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>
@@ -123,13 +125,14 @@ function AppTabs() {
               backgroundColor: colors.tabBg,
               borderTopColor: colors.tabBorder,
               borderTopWidth: 1,
-              paddingBottom: 4,
-              height: 60,
+              paddingBottom: 6,
+              paddingTop: 4,
+              height: 68,
             },
             tabBarLabelStyle: {
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: "600",
-              marginBottom: 2,
+              marginBottom: 0,
             },
           }}
         >
@@ -140,22 +143,11 @@ function AppTabs() {
               title: "Бичих",
               headerShown: false,
               tabBarIcon: ({ color, focused }) => (
-                <View
-                  style={{
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 34,
-                    height: 34,
-                    borderRadius: 17,
-                    backgroundColor: focused ? "#6366f1" : "transparent",
-                  }}
-                >
-                  <Ionicons
-                    name={focused ? "mic" : "mic-outline"}
-                    size={20}
-                    color={focused ? "#fff" : color}
-                  />
-                </View>
+                <Ionicons
+                  name={focused ? "mic" : "mic-outline"}
+                  size={24}
+                  color={color}
+                />
               ),
             }}
           />
@@ -178,7 +170,8 @@ function AppTabs() {
             name="Calendar"
             component={CalendarScreen}
             options={{
-              title: "Календарь",
+              title: "Хуанли",
+              headerShown: false,
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   name={focused ? "calendar" : "calendar-outline"}

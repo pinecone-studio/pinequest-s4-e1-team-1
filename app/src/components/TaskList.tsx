@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import TaskCard from './TaskCard';
 import { Task } from '../api';
 import { Tab } from './taskConstants';
@@ -19,8 +20,10 @@ const EMPTY_MSG: Record<Tab, string> = {
   completed: 'Дууссан даалгавар байхгүй',
 };
 
-const EMPTY_ICON: Record<Tab, string> = {
-  today: '✅', upcoming: '📅', completed: '🎉',
+const EMPTY_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
+  today:     'checkmark-circle-outline',
+  upcoming:  'calendar-outline',
+  completed: 'ribbon-outline',
 };
 
 export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete }: Props) {
@@ -33,7 +36,9 @@ export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete
   if (tasks.length === 0) {
     return (
       <View style={s.empty}>
-        <Text style={s.emptyIcon}>{EMPTY_ICON[activeTab]}</Text>
+        <View style={[s.emptyIconWrap, { backgroundColor: C.accentLight }]}>
+          <Ionicons name={EMPTY_ICON[activeTab]} size={28} color={C.accent} />
+        </View>
         <Text style={[s.emptyText, { color: C.textMuted }]}>{EMPTY_MSG[activeTab]}</Text>
       </View>
     );
@@ -54,7 +59,7 @@ export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete
 }
 
 const s = StyleSheet.create({
-  empty:     { alignItems: 'center', paddingTop: 60, paddingBottom: 20 },
-  emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, fontWeight: '500' },
+  empty:        { alignItems: 'center', paddingTop: 56, paddingBottom: 20, gap: 12 },
+  emptyIconWrap: { width: 56, height: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  emptyText:    { fontSize: 14, fontWeight: '500' },
 });

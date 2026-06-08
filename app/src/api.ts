@@ -61,6 +61,10 @@ export async function deleteTask(id: string) {
   await api.delete(`/api/tasks/${id}`, { headers: await authHeader() });
 }
 
+export async function deleteUserData() {
+  await api.delete('/api/user', { headers: await authHeader() });
+}
+
 export type ReportPeriod = 'day' | 'week' | 'month';
 export type ReportType = 'general' | 'work';
 

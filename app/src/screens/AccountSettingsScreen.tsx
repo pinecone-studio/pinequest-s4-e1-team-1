@@ -90,7 +90,6 @@ export default function AccountSettingsScreen() {
               ? new Date(user.metadata.creationTime).toLocaleDateString("mn-MN")
               : "Үл мэдэгдэх"
           } colors={C} />
-          <InfoRow icon="check-circle" label="И-мэйл Баталгаажаа" value={user?.emailVerified ? "Баталгаажсан" : "Баталгаажаагүй"} colors={C} />
         </View>
       </View>
     </ScrollView>
@@ -123,15 +122,9 @@ const s = StyleSheet.create({
   emailField: { flexDirection: "row", alignItems: "center", borderRadius: 8, borderWidth: 1, paddingVertical: 10, paddingHorizontal: 12, gap: 8 },
   emailText: { fontSize: 14 },
   emailHint: { fontSize: 11, marginTop: 6 },
-  hint: { fontSize: 11, marginTop: 6 },
-  button: { borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  button:{ borderRadius: 8, paddingVertical: 10, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   primaryButton: { borderWidth: 1 },
   buttonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
-  secondaryButton: { borderWidth: 1 },
-  secondaryButtonText: { fontSize: 14, fontWeight: "600" },
-  cancelButton: { borderWidth: 1 },
-  cancelButtonText: { fontSize: 14, fontWeight: "600" },
-  buttonGroup: { flexDirection: "row", gap: 8 },
   infoList: { borderRadius: 12, borderWidth: 1, overflow: "hidden" },
   infoRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1 },
   infoRowLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
