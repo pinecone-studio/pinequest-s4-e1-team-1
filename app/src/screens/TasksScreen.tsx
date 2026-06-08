@@ -104,10 +104,10 @@ export default function TasksScreen() {
   const displayTasks = useMemo(
     () => ({
       today: tasks.filter(
-        (t) => t.status !== "done" && (!t.due || t.due <= TODAY),
+        (t) => t.status !== "done" && (!t.due || t.due.slice(0, 10) <= TODAY),
       ),
       upcoming: tasks.filter(
-        (t) => t.status !== "done" && !!t.due && t.due > TODAY,
+        (t) => t.status !== "done" && !!t.due && t.due.slice(0, 10) > TODAY,
       ),
       completed: tasks.filter((t) => t.status === "done"),
     }),
