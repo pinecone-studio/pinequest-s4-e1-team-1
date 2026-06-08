@@ -15,6 +15,7 @@ import {
   Shield,
   Star,
   ChevronRight,
+  Activity,
 } from "lucide-react";
 
 /* ─── Spring cursor ────────────────────────────────────────────────────────── */
@@ -698,10 +699,10 @@ export default function LandingPage() {
                 background: "linear-gradient(135deg,#7c3aed,#db2777)",
               }}
             >
-              <Sparkles size={16} color="white" />
+              <Activity size={16} color="white" />
             </div>
             <span className="font-black text-[16px] tracking-tight text-white hidden sm:inline">
-              PineQuest
+              MonTask
             </span>
           </Link>
 
@@ -1038,7 +1039,7 @@ export default function LandingPage() {
               {
                 name: "Батболд",
                 role: "Программ хөгжүүлэгч",
-                text: "Өдөр бүр 20+ даалгавартай байдаг. PineQuest-ийн дараа бүгдийг цаг тухайд нь хийдэг болсон.",
+                text: "Өдөр бүр 20+ даалгавартай байдаг. MonTask-ийн дараа бүгдийг цаг тухайд нь хийдэг болсон.",
                 col: "#7c3aed",
               },
               {
@@ -1142,14 +1143,14 @@ export default function LandingPage() {
             className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
             style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
           >
-            <Sparkles size={10} color="white" />
+            <Activity size={11} color="white" />
           </div>
           <span className="text-[13px] font-black text-white/38">
-            PineQuest
+            MonTask
           </span>
         </div>
         <p className="text-[11px] text-white/18">
-          © 2026 PineQuest. Бүх эрх хуулиар хамгаалагдсан.
+          © 2026 MonTask. Бүх эрх хуулиар хамгаалагдсан.
         </p>
         <div className="flex gap-5">
           {["Нууцлал", "Нөхцөл", "Холбоо"].map((item) => (

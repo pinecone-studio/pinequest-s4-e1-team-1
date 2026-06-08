@@ -138,7 +138,7 @@ export default function ReportGeneralCard(p: Props) {
 
             <View style={s.storyInner}>
               <View style={s.storyTopRow}>
-                <Text style={s.storyAppName}>VocAI</Text>
+                <Text style={s.storyAppName}>MonTask</Text>
                 <Text style={s.storyDate}>{fmt(p.endDate)}</Text>
               </View>
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "VocAI",
+    "name": "MonTask",
     "slug": "vocai-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,8 +13,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.vocai.app",
-      "buildNumber": "1",
+      "bundleIdentifier": "com.namuun0521.vocai",
+      "buildNumber": "2",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Энэ апп таны яриаг тэмдэглэл болгоход микрофон ашиглана",
         "ITSAppUsesNonExemptEncryption": false
@@ -29,7 +29,10 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ]
     },
     "web": {
@@ -40,6 +43,11 @@
       "expo-sharing",
       "expo-mail-composer",
       "expo-notifications"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "381c5e4a-332f-454b-9e21-772c1502a555"
+      }
+    }
   }
 }

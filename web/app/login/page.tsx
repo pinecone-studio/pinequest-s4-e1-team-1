@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 
@@ -148,9 +149,9 @@ export default function LoginPage() {
             className="w-5 h-5 rounded-lg flex items-center justify-center"
             style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
           >
-            <span className="text-[10px] font-black">P</span>
+            <Activity size={11} color="white" />
           </div>
-          PineQuest
+          MonTask
         </div>
         <div className="w-16" />
       </div>

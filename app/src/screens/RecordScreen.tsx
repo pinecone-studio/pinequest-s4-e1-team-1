@@ -173,7 +173,7 @@ export default function RecordScreen() {
         >
           {/* Header */}
           <View style={s.header}>
-            <Text style={[s.greeting, { color: C.text }]}>VocAI</Text>
+            <Text style={[s.greeting, { color: C.text }]}>MonTask</Text>
             <Text style={[s.subtitle, { color: C.textSec }]}>Тэмдэглэл үүсгэх</Text>
           </View>
 

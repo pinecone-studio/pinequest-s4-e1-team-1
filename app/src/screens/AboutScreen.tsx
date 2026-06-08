@@ -18,14 +18,14 @@ export default function AboutScreen() {
         <View style={[s.logo, { backgroundColor: C.accent }]}>
           <Text style={s.logoText}>V</Text>
         </View>
-        <Text style={[s.appName, { color: C.text }]}>VocAI</Text>
+        <Text style={[s.appName, { color: C.text }]}>MonTask</Text>
         <Text style={[s.version, { color: C.textMuted }]}>v1.0.0</Text>
       </View>
 
       <View style={s.section}>
         <Text style={[s.sectionTitle, { color: C.text }]}>Аппликейшний Тайлбар</Text>
         <Text style={[s.description, { color: C.textSec }]}>
-          VocAI бол таны өнөөдрийн үйл ажиллагааг хэлээр бичиж авч, AI ашиглан
+          MonTask бол таны өнөөдрийн үйл ажиллагааг хэлээр бичиж авч, AI ашиглан
           даалгавар, хуваарь болгон зохион байгуулдаг ухаалаг тусламч юм.
         </Text>
       </View>
@@ -56,7 +56,7 @@ export default function AboutScreen() {
       </View>
 
       <View style={[s.footer, { borderTopColor: C.border }]}>
-        <Text style={[s.footerText, { color: C.textSec }]}>© 2026 VocAI. Бүх эрх хуулиар хамгаалагдана.</Text>
+        <Text style={[s.footerText, { color: C.textSec }]}>© 2026 MonTask. Бүх эрх хуулиар хамгаалагдана.</Text>
       </View>
     </ScrollView>
   );
