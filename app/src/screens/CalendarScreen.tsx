@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import {
   View,
   Text,
@@ -313,8 +314,8 @@ export default function CalendarScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={s.header}>
-          <Text style={[s.subTitle, { color: C.textMuted }]}>{year}</Text>
-          <Text style={[s.pageTitle, { color: C.text }]}>Календарь</Text>
+          <Text style={[s.subTitle, { color: C.textMuted }]}>{year} · Хуанли</Text>
+          <Text style={[s.pageTitle, { color: C.text }]}>{MONTHS[month]}</Text>
         </View>
 
         <View style={s.monthNav}>
@@ -376,7 +377,9 @@ export default function CalendarScreen() {
 
         {selectedTasks.length === 0 ? (
           <View style={s.empty}>
-            <Text style={s.emptyEmoji}>📅</Text>
+            <View style={[s.emptyIconWrap, { backgroundColor: C.accentLight }]}>
+              <Ionicons name="calendar-outline" size={26} color={C.accent} />
+            </View>
             <Text style={[s.emptyText, { color: C.textSec }]}>
               Энэ өдөр даалгавар байхгүй
             </Text>
@@ -442,7 +445,7 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   countBadgeText: { color: "#fff", fontSize: 12, fontWeight: "800" },
-  empty: { alignItems: "center", paddingVertical: 32, gap: 8 },
-  emptyEmoji: { fontSize: 44 },
+  empty: { alignItems: "center", paddingVertical: 32, gap: 10 },
+  emptyIconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   emptyText: { fontSize: 15, fontWeight: "600" },
 });

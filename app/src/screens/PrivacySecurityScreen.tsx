@@ -11,6 +11,7 @@ import {
 import { Feather } from "expo-vector-icons";
 import { useTheme } from "../theme/ThemeContext";
 import { auth } from "../firebase";
+import { deleteUserData } from "../api";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 type PrivacySecurityScreenNavigationProp = NativeStackNavigationProp<any, "PrivacySecurity">;
@@ -58,9 +59,14 @@ export default function PrivacySecurityScreen({ navigation }: PrivacySecurityScr
               style: "destructive",
               onPress: async () => {
                 try {
+                  await deleteUserData().catch(() => {});
                   if (auth.currentUser) await auth.currentUser.delete();
                 } catch (err: any) {
-                  Alert.alert("Алдаа", err.message || "Алдаа гарлаа");
+                  if (err?.code === 'auth/requires-recent-login') {
+                    Alert.alert("Дахин нэвтрэх шаардлагатай", "Аюулгүй байдлын үүднээс аккаунт устгахын өмнө дахин нэвтэрнэ үү.");
+                  } else {
+                    Alert.alert("Алдаа", err.message || "Алдаа гарлаа");
+                  }
                 }
               },
             },

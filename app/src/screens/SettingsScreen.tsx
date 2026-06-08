@@ -3,205 +3,218 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, ActivityIndicator, ScrollView, Switch,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "expo-vector-icons";
 import { signOut, deleteUser } from "firebase/auth";
 import { auth } from "../firebase";
+import { deleteUserData } from "../api";
 import { useTheme } from "../theme/ThemeContext";
 
-interface SettingItem {
-  iconName: keyof typeof Feather.glyphMap;
-  title: string;
-  description: string;
-  onPress: () => void;
-}
+type Nav = NativeStackNavigationProp<any, "SettingsMain">;
 
-type SettingsScreenNavigationProp = NativeStackNavigationProp<any, "SettingsMain">;
-
-interface SettingsScreenProps {
-  navigation: SettingsScreenNavigationProp;
-}
-
-export default function SettingsScreen({ navigation }: SettingsScreenProps) {
+export default function SettingsScreen({ navigation }: { navigation: Nav }) {
   const [loading, setLoading] = useState(false);
   const { isDark, toggleTheme, colors: C } = useTheme();
 
+  const user = auth.currentUser;
+
   const handleLogout = async () => {
-    await signOut(auth);
+    Alert.alert("Гарах", "Гарахдаа итгэлтэй байна уу?", [
+      { text: "Болих", style: "cancel" },
+      { text: "Гарах", style: "destructive", onPress: async () => { await signOut(auth); } },
+    ]);
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      "Бүртгэл устгах",
-      "Таны бүх өгөгдөл устана. Та итгэлтэй байна уу?",
-      [
-        { text: "Болих", style: "cancel" },
-        {
-          text: "Устгах",
-          style: "destructive",
-          onPress: async () => {
-            setLoading(true);
-            try {
-              if (auth.currentUser) await deleteUser(auth.currentUser);
-            } catch (err: unknown) {
-              Alert.alert(
-                "Алдаа",
-                err instanceof Error ? err.message : "Алдаа гарлаа.",
-              );
-            } finally {
-              setLoading(false);
+    Alert.alert("Бүртгэл устгах", "Таны бүх өгөгдөл устана. Та итгэлтэй байна уу?", [
+      { text: "Болих", style: "cancel" },
+      {
+        text: "Устгах", style: "destructive",
+        onPress: async () => {
+          setLoading(true);
+          try {
+            await deleteUserData().catch(() => {});
+            if (auth.currentUser) await deleteUser(auth.currentUser);
+          } catch (err: any) {
+            if (err?.code === 'auth/requires-recent-login') {
+              Alert.alert("Дахин нэвтрэх шаардлагатай", "Аюулгүй байдлын үүднээс аккаунт устгахын өмнө дахин нэвтэрнэ үү.");
+            } else {
+              Alert.alert("Алдаа", err instanceof Error ? err.message : "Алдаа гарлаа.");
             }
-          },
+          } finally { setLoading(false); }
         },
-      ],
-    );
+      },
+    ]);
   };
 
-  const settingItems: SettingItem[] = [
+  const groups: { title: string; items: { icon: keyof typeof Feather.glyphMap; label: string; sub?: string; onPress: () => void; right?: "arrow" | "switch" }[] }[] = [
     {
-      iconName: "user",
-      title: "Бүртгэлийн тохиргоо",
-      description: "Нэр, имэйл болон бусад мэдээллээ удирдах",
-      onPress: () => navigation.navigate("AccountSettings" as any),
+      title: "Бүртгэл",
+      items: [
+        { icon: "user", label: "Бүртгэлийн тохиргоо", sub: user?.email ?? "", onPress: () => navigation.navigate("AccountSettings") },
+      ],
     },
     {
-      iconName: "moon",
-      title: isDark ? "Харанхуй горим" : "Гэрэл горим",
-      description: "Дүр төрхийн сэдэв",
-      onPress: toggleTheme,
+      title: "Дүр төрх",
+      items: [
+        { icon: isDark ? "moon" : "sun", label: isDark ? "Харанхуй горим" : "Гэрэл горим", sub: "Өнгөний загвар", onPress: toggleTheme, right: "switch" },
+      ],
     },
     {
-      iconName: "lock",
-      title: "Нууцлал & Аюулгүй байдал",
-      description: "Өгөгдлийн хамгаалалт & Нууцлал",
-      onPress: () => navigation.navigate("PrivacySecurity" as any),
+      title: "Аюулгүй байдал",
+      items: [
+        { icon: "lock", label: "Нууцлал & Аюулгүй байдал", sub: "Өгөгдлийн хамгаалалт", onPress: () => navigation.navigate("PrivacySecurity") },
+      ],
     },
     {
-      iconName: "globe",
-      title: "Хэл",
-      description: "Хэлээ сонгоно уу",
-      onPress: () =>
-        Alert.alert("Удахгүй ирэх байна", "Хэлний тохиргоо удахгүй байх болно"),
-    },
-    {
-      iconName: "help-circle",
-      title: "Туслалцаа & Дэмжлэг",
-      description: "Асуулт-хариулт ба дэмжлэгтэй холбоо барих",
-      onPress: () => navigation.navigate("HelpScreen" as any),
-    },
-    {
-      iconName: "info",
-      title: "Тухай",
-      description: "Программын хувилбар & мэдээлэл",
-      onPress: () => navigation.navigate("AboutScreen" as any),
+      title: "Тусламж",
+      items: [
+        { icon: "help-circle", label: "Туслалцаа & Дэмжлэг", sub: "Асуулт, тусламж", onPress: () => navigation.navigate("HelpScreen") },
+        { icon: "info", label: "Аппын тухай", sub: "Хувилбар & мэдээлэл", onPress: () => navigation.navigate("AboutScreen") },
+      ],
     },
   ];
 
   return (
-    <ScrollView
-      style={[s.container, { backgroundColor: C.bg }]}
-      contentContainerStyle={s.contentContainer}
-    >
-      <Text style={[s.title, { color: C.text }]}>Тохиргоо</Text>
+    <SafeAreaView style={[s.root, { backgroundColor: C.bg }]} edges={["top"]}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-      <View style={[s.settingsGroup, { backgroundColor: C.surface, borderColor: C.border }]}>
-        {settingItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              s.settingItem,
-              index !== settingItems.length - 1 && [s.settingItemBorder, { borderBottomColor: C.border }],
-            ]}
-            onPress={item.onPress}
-          >
-            <View style={[s.iconContainer, { backgroundColor: C.accentLight }]}>
-              <Feather name={item.iconName} size={20} color={C.accent} />
+        {/* Header */}
+        <View style={s.header}>
+          <Text style={[s.title, { color: C.text }]}>Тохиргоо</Text>
+        </View>
+
+        {/* Profile card */}
+        <TouchableOpacity
+          style={[s.profileCard, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={() => navigation.navigate("AccountSettings")}
+          activeOpacity={0.8}
+        >
+          <View style={[s.avatar, { backgroundColor: C.accentLight }]}>
+            <Feather name="user" size={22} color={C.accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.profileName, { color: C.text }]}>
+              {user?.displayName ?? "Хэрэглэгч"}
+            </Text>
+            <Text style={[s.profileEmail, { color: C.textMuted }]} numberOfLines={1}>
+              {user?.email ?? ""}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={C.textMuted} />
+        </TouchableOpacity>
+
+        {/* Setting groups */}
+        {groups.map((group) => (
+          <View key={group.title} style={s.group}>
+            <Text style={[s.groupTitle, { color: C.textMuted }]}>{group.title}</Text>
+            <View style={[s.groupCard, { backgroundColor: C.surface, borderColor: C.border }]}>
+              {group.items.map((item, idx) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[
+                    s.row,
+                    idx < group.items.length - 1 && [s.rowBorder, { borderBottomColor: C.border }],
+                  ]}
+                  onPress={item.onPress}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.iconWrap, { backgroundColor: C.accentLight }]}>
+                    <Feather name={item.icon} size={17} color={C.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.rowLabel, { color: C.text }]}>{item.label}</Text>
+                    {item.sub ? (
+                      <Text style={[s.rowSub, { color: C.textMuted }]} numberOfLines={1}>{item.sub}</Text>
+                    ) : null}
+                  </View>
+                  {item.right === "switch" ? (
+                    <Switch
+                      value={isDark}
+                      onValueChange={toggleTheme}
+                      trackColor={{ false: C.border, true: C.accent }}
+                      thumbColor="#fff"
+                    />
+                  ) : (
+                    <Feather name="chevron-right" size={17} color={C.textMuted} />
+                  )}
+                </TouchableOpacity>
+              ))}
             </View>
-            <View style={s.settingContent}>
-              <Text style={[s.settingTitle, { color: C.text }]}>{item.title}</Text>
-              <Text style={[s.settingDescription, { color: C.textMuted }]}>{item.description}</Text>
-            </View>
-            {item.iconName === 'moon' ? (
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                trackColor={{ false: C.border, true: C.accent }}
-                thumbColor="#fff"
-              />
-            ) : (
-              <Feather name="chevron-right" size={20} color={C.textMuted} />
-            )}
-          </TouchableOpacity>
+          </View>
         ))}
-      </View>
 
-      <TouchableOpacity
-        style={[s.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
-        onPress={handleLogout}
-      >
-        <Feather name="log-out" size={18} color={C.textSec} />
-        <Text style={[s.logoutText, { color: C.textSec }]}>Гарах</Text>
-      </TouchableOpacity>
+        {/* Logout */}
+        <TouchableOpacity
+          style={[s.logoutBtn, { backgroundColor: C.surface, borderColor: C.border }]}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Feather name="log-out" size={17} color={C.textSec} />
+          <Text style={[s.logoutText, { color: C.textSec }]}>Гарах</Text>
+        </TouchableOpacity>
 
-      
-      <Text style={[s.deleteHint, { color: C.textMuted }]}>2026</Text>
-    </ScrollView>
+        {/* Delete account */}
+        <TouchableOpacity
+          style={[s.deleteBtn]}
+          onPress={handleDeleteAccount}
+          disabled={loading}
+          activeOpacity={0.8}
+        >
+          {loading
+            ? <ActivityIndicator size="small" color="#dc2626" />
+            : <>
+                <Feather name="trash-2" size={15} color="#dc2626" />
+                <Text style={s.deleteText}>Бүртгэл устгах</Text>
+              </>
+          }
+        </TouchableOpacity>
+
+        <Text style={[s.version, { color: C.textMuted }]}>VocAI v1.0.0 · 2026</Text>
+        <View style={{ height: 24 }} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
-  contentContainer: { padding: 24, paddingBottom: 32 },
-  title: { fontSize: 28, fontWeight: "700", marginBottom: 24, marginTop: 8 },
-  settingsGroup: {
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 24,
-    overflow: "hidden",
+  root:   { flex: 1 },
+  scroll: { paddingHorizontal: 20 },
+
+  header: { paddingTop: 12, paddingBottom: 20 },
+  title:  { fontSize: 28, fontWeight: "800", letterSpacing: -0.5 },
+
+  profileCard: {
+    flexDirection: "row", alignItems: "center", gap: 14,
+    borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 28,
   },
-  settingItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  settingItemBorder: { borderBottomWidth: 1 },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
-  },
-  settingContent: { flex: 1 },
-  settingTitle: { fontSize: 15, fontWeight: "600", marginBottom: 4 },
-  settingDescription: { fontSize: 13 },
+  avatar: { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  profileName:  { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  profileEmail: { fontSize: 12 },
+
+  group:      { marginBottom: 20 },
+  groupTitle: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 8, marginLeft: 4 },
+  groupCard:  { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+
+  row:       { flexDirection: "row", alignItems: "center", paddingVertical: 13, paddingHorizontal: 14, gap: 12 },
+  rowBorder: { borderBottomWidth: 1 },
+  iconWrap:  { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  rowLabel:  { fontSize: 14, fontWeight: "600" },
+  rowSub:    { fontSize: 11, marginTop: 1 },
+
   logoutBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    marginBottom: 12,
-    gap: 10,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderRadius: 14, borderWidth: 1, paddingVertical: 14,
+    marginBottom: 10,
   },
-  logoutText: { fontSize: 15, fontWeight: "600" },
+  logoutText: { fontSize: 14, fontWeight: "600" },
+
   deleteBtn: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#fca5a5",
-    backgroundColor: "#fff5f5",
-    marginBottom: 8,
-    gap: 10,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 12, marginBottom: 16,
   },
-  deleteText: { fontSize: 15, fontWeight: "600", color: "#dc2626" },
-  deleteHint: { fontSize: 12, textAlign: "center" },
+  deleteText: { fontSize: 13, color: "#dc2626" },
+
+  version: { fontSize: 11, textAlign: "center", marginBottom: 4 },
 });

@@ -172,7 +172,10 @@ export default function TasksScreen() {
         <View style={s.header}>
           <View>
             <Text style={[s.date, { color: C.textMuted }]}>{formatDate(new Date())}</Text>
-            <Text style={[s.pageTitle, { color: C.text }]}>Your tasks</Text>
+            <Text style={[s.pageTitle, { color: C.text }]}>Даалгаврууд</Text>
+          </View>
+          <View style={[s.taskCount, { backgroundColor: C.accentLight }]}>
+            <Text style={[s.taskCountText, { color: C.accent }]}>{tasks.filter(t => t.status !== 'done').length}</Text>
           </View>
         </View>
 
@@ -219,12 +222,10 @@ const s = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  date: { fontSize: 13, fontWeight: "500", marginBottom: 2 },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
+  date:      { fontSize: 12, fontWeight: "500", marginBottom: 3 },
+  pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },
+  taskCount: { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  taskCountText: { fontSize: 15, fontWeight: "800" },
   fab: {
     position: "absolute",
     bottom: 90,

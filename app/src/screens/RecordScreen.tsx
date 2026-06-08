@@ -4,6 +4,7 @@ import {
   ScrollView, Alert, ActivityIndicator, Animated,
   TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   useAudioRecorder, useAudioRecorderState,
   requestRecordingPermissionsAsync, setAudioModeAsync,
@@ -44,9 +45,7 @@ export default function RecordScreen() {
   const [manualText, setManualText] = useState('');
 
   const pulse1 = useRef(new Animated.Value(1)).current;
-  const pulse2 = useRef(new Animated.Value(1)).current;
-  const opacity1 = useRef(new Animated.Value(0.3)).current;
-  const opacity2 = useRef(new Animated.Value(0.15)).current;
+  const opacity1 = useRef(new Animated.Value(0.7)).current;
   const btnScale = useRef(new Animated.Value(1)).current;
   const pulseLoop = useRef<Animated.CompositeAnimation | null>(null);
   const tabAnim = useRef(new Animated.Value(0)).current;
@@ -56,6 +55,7 @@ export default function RecordScreen() {
       if (!s.granted) Alert.alert('Микрофон', 'Зөвшөөрөл олгоно уу.');
       else await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
     });
+    return () => { recorder.stop().catch(() => {}); };
   }, []);
 
   useEffect(() => {
@@ -73,22 +73,12 @@ export default function RecordScreen() {
       pulseLoop.current = Animated.loop(
         Animated.parallel([
           Animated.sequence([
-            Animated.timing(pulse1, { toValue: 1.55, duration: 1400, useNativeDriver: true }),
+            Animated.timing(pulse1, { toValue: 1.85, duration: 1600, useNativeDriver: true }),
             Animated.timing(pulse1, { toValue: 1, duration: 0, useNativeDriver: true }),
           ]),
           Animated.sequence([
-            Animated.timing(opacity1, { toValue: 0, duration: 1400, useNativeDriver: true }),
-            Animated.timing(opacity1, { toValue: 0.3, duration: 0, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.delay(300),
-            Animated.timing(pulse2, { toValue: 1.9, duration: 1400, useNativeDriver: true }),
-            Animated.timing(pulse2, { toValue: 1, duration: 0, useNativeDriver: true }),
-          ]),
-          Animated.sequence([
-            Animated.delay(300),
-            Animated.timing(opacity2, { toValue: 0, duration: 1400, useNativeDriver: true }),
-            Animated.timing(opacity2, { toValue: 0.15, duration: 0, useNativeDriver: true }),
+            Animated.timing(opacity1, { toValue: 0, duration: 1600, useNativeDriver: true }),
+            Animated.timing(opacity1, { toValue: 0.7, duration: 0, useNativeDriver: true }),
           ]),
         ])
       );
@@ -96,8 +86,8 @@ export default function RecordScreen() {
     } else {
       pulseLoop.current?.stop();
       Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 12 }).start();
-      pulse1.setValue(1); pulse2.setValue(1);
-      opacity1.setValue(0.3); opacity2.setValue(0.15);
+      pulse1.setValue(1);
+      opacity1.setValue(0.7);
     }
   }, [state.isRecording]);
 
@@ -105,7 +95,7 @@ export default function RecordScreen() {
     if (state.isRecording) {
       await recorder.stop();
       const uri = recorder.uri;
-      if (!uri) return;
+      if (!uri) { setPhase('idle'); return; }
       setPhase('processing');
       setTranscribed(''); setResult(null);
       try {
@@ -119,12 +109,19 @@ export default function RecordScreen() {
       } catch (err: any) {
         Alert.alert('Алдаа', err?.response?.data?.error ?? err.message ?? 'Алдаа гарлаа');
         setPhase('idle');
+        setTranscribed('');
+        setResult(null);
       }
     } else {
       setTranscribed(''); setResult(null);
       setPhase('recording');
-      await recorder.prepareToRecordAsync();
-      recorder.record();
+      try {
+        await recorder.prepareToRecordAsync();
+        recorder.record();
+      } catch (err: any) {
+        Alert.alert('Алдаа', err?.message ?? 'Бичлэг эхлүүлж чадсангүй');
+        setPhase('idle');
+      }
     }
   };
 
@@ -142,6 +139,8 @@ export default function RecordScreen() {
     } catch (err: any) {
       Alert.alert('Алдаа', err?.response?.data?.error ?? err.message ?? 'Алдаа гарлаа');
       setPhase('idle');
+      setTranscribed('');
+      setResult(null);
     }
   };
 
@@ -155,7 +154,6 @@ export default function RecordScreen() {
   const isRecording = state.isRecording;
   const isProcessing = phase === 'processing';
   const btnBg = isRecording ? C.danger : isProcessing ? C.textMuted : C.accent;
-  const ringColor = isRecording ? C.danger : C.accent;
 
   const tabIndicatorLeft = tabAnim.interpolate({
     inputRange: [0, 1],
@@ -175,7 +173,7 @@ export default function RecordScreen() {
         >
           {/* Header */}
           <View style={s.header}>
-            <Text style={[s.greeting, { color: C.text }]}>Товч</Text>
+            <Text style={[s.greeting, { color: C.text }]}>VocAI</Text>
             <Text style={[s.subtitle, { color: C.textSec }]}>Тэмдэглэл үүсгэх</Text>
           </View>
 
@@ -207,7 +205,11 @@ export default function RecordScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={s.tabBtn}
-              onPress={() => { setMode('text'); if (phase === 'done') handleReset(); }}
+              onPress={() => {
+                if (state.isRecording) { recorder.stop().catch(() => {}); setPhase('idle'); }
+                setMode('text');
+                if (phase === 'done') handleReset();
+              }}
               activeOpacity={0.7}
             >
               <Ionicons
@@ -225,42 +227,63 @@ export default function RecordScreen() {
           {mode === 'voice' && (
             <View style={s.stage}>
               <View style={s.micContainer}>
-                <View style={[s.stageCircle, { backgroundColor: C.accentLight }]} />
-                <Animated.View style={[s.ring, {
-                  transform: [{ scale: pulse2 }], opacity: opacity2,
-                  borderColor: ringColor,
-                }]} />
-                <Animated.View style={[s.ring, {
-                  transform: [{ scale: pulse1 }], opacity: opacity1,
-                  borderColor: ringColor,
-                }]} />
+                {/* Static ambient glow */}
+                <View style={[s.ambientGlow, { backgroundColor: isRecording ? '#ef444418' : C.accentLight }]} />
 
-              <Animated.View style={{ transform: [{ scale: btnScale }] }}>
-                <TouchableOpacity
-                  style={[s.micBtn, { backgroundColor: btnBg, shadowColor: btnBg }]}
-                  onPress={handleVoicePress}
-                  disabled={isProcessing}
-                  activeOpacity={0.88}
-                >
-                  {isProcessing ? (
-                    <ActivityIndicator size="large" color="#fff" />
-                  ) : isRecording ? (
-                    <View style={s.stopIcon} />
-                  ) : (
-                    <Ionicons name="mic" size={44} color="#fff" />
-                  )}
-                </TouchableOpacity>
-              </Animated.View>
+                {/* Single pulse ring — recording only */}
+                {isRecording && (
+                  <Animated.View style={[s.pulseRing, {
+                    transform: [{ scale: pulse1 }],
+                    opacity: opacity1,
+                    borderColor: '#ef4444',
+                  }]} />
+                )}
+
+                <Animated.View style={[s.micShadow, { transform: [{ scale: btnScale }], shadowColor: btnBg }]}>
+                  <TouchableOpacity
+                    onPress={handleVoicePress}
+                    disabled={isProcessing || (phase === 'recording' && !isRecording)}
+                    activeOpacity={0.88}
+                    style={s.micBtnTouch}
+                  >
+                    <LinearGradient
+                      colors={
+                        isRecording
+                          ? ['#ef4444', '#dc2626']
+                          : isProcessing
+                            ? [C.textMuted, C.textMuted]
+                            : ['#7c3aed', '#db2777']
+                      }
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={s.micBtn}
+                    >
+                      {isProcessing ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                      ) : isRecording ? (
+                        <View style={s.pauseIcon}>
+                          <View style={s.pauseBar} />
+                          <View style={s.pauseBar} />
+                        </View>
+                      ) : (
+                        <Ionicons name="mic" size={52} color="#fff" />
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </Animated.View>
               </View>
 
-              <Text style={[s.statusLabel, { color: isRecording ? C.danger : C.textSec }]}>
-                {isProcessing ? 'Боловсруулж байна...' : isRecording ? 'Бичиж байна' : 'Дарж эхлүүл'}
-              </Text>
+              <View style={s.statusRow}>
+                {isRecording && <View style={[s.recIndicator, { backgroundColor: C.danger }]} />}
+                <Text style={[s.statusLabel, { color: isRecording ? C.danger : isProcessing ? C.textMuted : C.textSec }]}>
+                  {isProcessing ? 'Боловсруулж байна...' : isRecording ? 'Бичиж байна' : 'Дарж эхлүүл'}
+                </Text>
+              </View>
 
               {isRecording && (
                 <View style={s.waveRow}>
-                  {[20, 34, 28, 44, 36, 24, 40, 30, 22].map((h, i) => (
-                    <AnimatedBar key={i} height={h} delay={i * 90} color={C.danger} />
+                  {(['#a78bfa', '#c084fc', '#e879f9', '#c084fc', '#a78bfa'] as const).map((color, i) => (
+                    <AnimatedBar key={i} height={([14, 26, 40, 26, 14] as const)[i]} delay={i * 130} color={color} />
                   ))}
                 </View>
               )}
@@ -421,8 +444,7 @@ function AnimatedBar({ height, delay, color }: { height: number; delay: number; 
   );
 }
 
-const BTN = 148;
-const RING = BTN;
+const BTN = 140;
 
 const s = StyleSheet.create({
   root: { flex: 1 },
@@ -465,31 +487,31 @@ const s = StyleSheet.create({
   tabLabel: { fontSize: 14 },
 
   // Voice stage
-  stage: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, marginVertical: 4 },
-  stageCircle: {
-    position: 'absolute',
-    width: BTN + 60,
-    height: BTN + 60,
-    borderRadius: (BTN + 60) / 2,
-    top: (BTN * 2 - (BTN + 60)) / 2,
-    left: (BTN * 2 - (BTN + 60)) / 2,
-  },
+  stage: { alignItems: 'center', paddingVertical: 28, marginVertical: 4 },
   micContainer: {
-    width: BTN * 2,
-    height: BTN * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ring: { position: 'absolute', width: RING, height: RING, borderRadius: RING / 2, borderWidth: 2 },
-  micBtn: {
-    width: BTN, height: BTN, borderRadius: BTN / 2,
+    width: 300, height: 300,
     alignItems: 'center', justifyContent: 'center',
-    shadowOpacity: 0.35, shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 }, elevation: 14,
   },
-  stopIcon: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#fff' },
-  statusLabel: { marginTop: 20, fontSize: 15, fontWeight: '600', letterSpacing: 0.1 },
-  waveRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 18, height: 44 },
+  ambientGlow: { position: 'absolute', width: 230, height: 230, borderRadius: 115 },
+  pulseRing: {
+    position: 'absolute',
+    width: BTN + 32, height: BTN + 32,
+    borderRadius: (BTN + 32) / 2,
+    borderWidth: 1.5,
+  },
+  micShadow: {
+    borderRadius: BTN / 2,
+    shadowOpacity: 0.42, shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 }, elevation: 16,
+  },
+  micBtnTouch: { borderRadius: BTN / 2, overflow: 'hidden' },
+  micBtn: { width: BTN, height: BTN, alignItems: 'center', justifyContent: 'center' },
+  pauseIcon: { flexDirection: 'row', gap: 9, alignItems: 'center' },
+  pauseBar: { width: 5, height: 26, borderRadius: 3, backgroundColor: '#fff' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
+  recIndicator: { width: 7, height: 7, borderRadius: 3.5 },
+  statusLabel: { fontSize: 14, fontWeight: '600', letterSpacing: 0.1 },
+  waveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16, height: 40 },
   hintText: { marginTop: 10, fontSize: 13 },
 
   // Text mode

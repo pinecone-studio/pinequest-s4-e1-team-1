@@ -46,7 +46,10 @@ export default function ReportScreen() {
 
   return (
     <ScrollView style={[s.root, { backgroundColor: C.bg }]} contentContainerStyle={s.content}>
-      <Text style={[s.pageTitle, { color: C.text }]}>Тайлан</Text>
+      <View style={s.header}>
+        <Text style={[s.pageTitle, { color: C.text }]}>Тайлан</Text>
+        <Text style={[s.pageSub, { color: C.textMuted }]}>Гүйцэтгэлийн шинжилгээ</Text>
+      </View>
 
       {/* Type toggle */}
       <View style={[s.toggle, { backgroundColor: C.surfaceAlt }]}>
@@ -111,7 +114,9 @@ export default function ReportScreen() {
 const s = StyleSheet.create({
   root: { flex: 1 },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
-  pageTitle: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginBottom: 20, marginTop: 8 },
+  header:    { marginBottom: 20, marginTop: 8 },
+  pageTitle: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
+  pageSub:   { fontSize: 13, marginTop: 3 },
 
   toggle: { flexDirection: 'row', borderRadius: 14, padding: 3, marginBottom: 12, height: 44 },
   toggleBtn: { flex: 1, justifyContent: 'center', alignItems: 'center', borderRadius: 11 },

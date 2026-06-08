@@ -20,7 +20,7 @@ export default function FocusCard({ tasks, loading }: Props) {
       <View style={s.top}>
         <View>
           <Text style={s.title}>Өнөөдрийн гол зүйлс</Text>
-          <Text style={s.sub}>AI picked for you</Text>
+          <Text style={s.sub}>AI таны хувьд сонгосон</Text>
         </View>
       </View>
 
