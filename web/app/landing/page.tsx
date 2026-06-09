@@ -16,6 +16,9 @@ import {
   Star,
   ChevronRight,
   Activity,
+  Rocket,
+  Eye,
+  Sun,
 } from "lucide-react";
 
 /* ─── Spring cursor ────────────────────────────────────────────────────────── */
@@ -370,8 +373,8 @@ function AppPreview() {
 
         {/* Header section with greeting */}
         <div className="px-6 pt-5 pb-3 border-b border-white/8">
-          <div className="text-[14px] font-semibold text-white mb-1">
-            ☀️ Өглөө гов!
+          <div className="text-[14px] font-semibold text-white mb-1 flex items-center gap-1.5">
+            <Sun size={14} className="text-yellow-300" /> Өглөө гов!
           </div>
           <div className="text-[12px] text-white/40">
             Даваа, 6-р сарын 8 • 09:45
@@ -766,7 +769,7 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
               <span className="relative rounded-full h-2 w-2 bg-violet-400" />
             </span>
-            ✨ AI-тай бүтээмжтэй ажиллах шинэ арга
+            <Sparkles size={11} /> AI-тай бүтээмжтэй ажиллах шинэ арга
           </div>
 
           {/* Main heading with gradient effect */}
@@ -799,14 +802,14 @@ export default function LandingPage() {
             className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-700 delay-220 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             <MagBtn href="/login">
-              🚀 Үнэгүй эхлэх
+              <Rocket size={15} /> Үнэгүй эхлэх
               <ArrowRight
                 size={15}
                 className="group-hover:translate-x-1 transition-transform"
               />
             </MagBtn>
             <MagBtn href="#features" outline>
-              👀 Жишээ үзэх
+              <Eye size={15} /> Жишээ үзэх
               <ChevronRight size={14} className="opacity-50" />
             </MagBtn>
           </div>
@@ -1111,7 +1114,7 @@ export default function LandingPage() {
               >
                 <div className="anim-border absolute inset-x-0 top-0 h-[1.5px]" />
                 <div className="text-[11px] font-semibold text-violet-300 mb-5 tracking-widest uppercase">
-                  ✦ Өнөөдрөөс эхэл
+                  <Sparkles size={10} className="inline mr-1" /> Өнөөдрөөс эхэл
                 </div>
                 <h2 className="text-[clamp(1.8rem,5vw,3rem)] font-black tracking-tight mb-4 leading-tight">
                   Цаг хугацаагаа{" "}
