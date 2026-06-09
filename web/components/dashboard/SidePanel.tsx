@@ -133,7 +133,7 @@ function AIInsightCard({ summary, loading }: { summary: string; loading: boolean
             <p className="text-sm text-white/50 italic mb-3">Өнөөдрийн бичлэг байхгүй.</p>
             {quote && (
               <div className="border-t border-white/15 pt-3">
-                <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1">✦ Өдрийн сэдэл</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wider mb-1 flex items-center gap-1"><Sparkles size={9} /> Өдрийн сэдэл</p>
                 <p className="text-xs text-white/75 leading-relaxed italic">"{quote}"</p>
               </div>
             )}

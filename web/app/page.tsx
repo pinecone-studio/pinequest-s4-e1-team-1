@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { fetchTasks, fetchReport, updateTask, deleteTask, BackendTask } from '@/lib/api';
-import { Plus, Flame, Target, Zap } from 'lucide-react';
+import { Plus, Flame, Target, Zap, Moon, Sunrise, Sun, Sunset, PartyPopper } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import StatsRow from '@/components/dashboard/StatsRow';
 import TodaySection, { Task } from '@/components/dashboard/TodaySection';
 import SidePanel, { UpcomingTask } from '@/components/dashboard/SidePanel';
@@ -17,13 +18,13 @@ function formatDateMN(d: Date) {
   return `${WEEKDAYS_MN[d.getDay()]}, ${MONTHS_MN[d.getMonth()]}ын ${d.getDate()}`;
 }
 
-function getGreeting() {
+function getGreeting(): { text: string; Icon: LucideIcon; iconColor: string; from: string; via: string; to: string } {
   const h = new Date().getHours();
-  if (h < 6)  return { text: 'Шөнийн мэнд',  emoji: '🌙', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
-  if (h < 12) return { text: 'Өглөөний мэнд', emoji: '🌅', from: '#3730a3', via: '#4f46e5', to: '#6d28d9' };
-  if (h < 17) return { text: 'Өдрийн мэнд',   emoji: '☀️', from: '#4338ca', via: '#5b21b6', to: '#6d28d9' };
-  if (h < 21) return { text: 'Оройн мэнд',    emoji: '🌆', from: '#4c1d95', via: '#5b21b6', to: '#3730a3' };
-  return             { text: 'Шөнийн мэнд',  emoji: '🌙', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
+  if (h < 6)  return { text: 'Шөнийн мэнд',  Icon: Moon,    iconColor: '#a5b4fc', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
+  if (h < 12) return { text: 'Өглөөний мэнд', Icon: Sunrise, iconColor: '#fcd34d', from: '#3730a3', via: '#4f46e5', to: '#6d28d9' };
+  if (h < 17) return { text: 'Өдрийн мэнд',   Icon: Sun,     iconColor: '#fde68a', from: '#4338ca', via: '#5b21b6', to: '#6d28d9' };
+  if (h < 21) return { text: 'Оройн мэнд',    Icon: Sunset,  iconColor: '#fda4af', from: '#4c1d95', via: '#5b21b6', to: '#3730a3' };
+  return             { text: 'Шөнийн мэнд',  Icon: Moon,    iconColor: '#a5b4fc', from: '#1e1b4b', via: '#312e81', to: '#1e1b4b' };
 }
 
 function toFrontendTask(t: BackendTask): Task {
@@ -120,13 +121,13 @@ export default function HomePage() {
           <div className="relative flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-2xl">{greeting.emoji}</span>
+                <greeting.Icon size={26} style={{ color: greeting.iconColor }} />
                 <span className="text-lg font-black tracking-tight">{greeting.text}!</span>
               </div>
               <p className="text-white/70 text-sm">{formatDateMN(new Date())}</p>
               {allDone && (
                 <div className="mt-2 flex items-center gap-1.5 bg-white/15 rounded-full px-3 py-1 w-fit">
-                  <span className="text-base">🎉</span>
+                  <PartyPopper size={16} className="text-yellow-300 shrink-0" />
                   <span className="text-xs font-bold">Бүх даалгавар дууслаа!</span>
                 </div>
               )}
