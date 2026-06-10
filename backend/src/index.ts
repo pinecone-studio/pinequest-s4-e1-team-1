@@ -10,6 +10,7 @@ import entriesRouter from './routes/entries';
 import tasksRouter from './routes/tasks';
 import reportRouter from './routes/report';
 import userRouter from './routes/user';
+import parseDatetimeRouter from './routes/parse-datetime';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -27,6 +28,7 @@ app.use('/api/entries', entriesRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/report', reportRouter);
 app.use('/api/user', userRouter);
+app.use('/api/parse-datetime', parseDatetimeRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

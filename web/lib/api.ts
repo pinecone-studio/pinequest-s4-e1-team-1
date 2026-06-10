@@ -67,7 +67,7 @@ export async function processText(text: string) {
 
 export async function saveEntry(body: {
   text: string;
-  tasks: { title: string; due: string }[];
+  tasks: { title: string; due: string; priority?: string; category?: string }[];
   events: { title: string; datetime: string }[];
   summary: string;
 }) {
@@ -88,6 +88,11 @@ export type ReportData = {
   highCount?: number; mediumCount?: number; lowCount?: number;
   executiveSummary?: string; insights?: string; risks?: string; recommendations?: string;
 };
+
+export async function parseDatetime(text: string) {
+  const { data } = await api.post('/api/parse-datetime', { text });
+  return data as { due: string };
+}
 
 export async function fetchReport(date: string, period: ReportPeriod = 'day', type: ReportType = 'general') {
   const { data } = await api.post('/api/report', { date, period, type });
