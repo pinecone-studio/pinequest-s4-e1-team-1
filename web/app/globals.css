@@ -159,6 +159,16 @@ body {
   transform: translateX(100%);
 }
 
+/* ── Cursor pointer for interactive elements ─────────────────────── */
+button,
+a,
+[role="button"],
+label[for],
+select,
+summary {
+  cursor: pointer;
+}
+
 /* ── Button animations ────────────────────────────────────────────── */
 @keyframes buttonClick {
   0% {

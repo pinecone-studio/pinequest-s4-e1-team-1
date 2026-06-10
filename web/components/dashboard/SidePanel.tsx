@@ -14,17 +14,26 @@ const QUOTES = [
   'Бүтээмж бол цагийн удирдлага биш, эрчим хүчний удирдлага.',
 ];
 
+// Deterministic height based on date string — same value every reload
+function seededHeight(dateStr: string) {
+  let h = 0;
+  for (let i = 0; i < dateStr.length; i++) h = (h * 31 + dateStr.charCodeAt(i)) & 0xffff;
+  return (h % 55) + 20;
+}
+
+const MAX_PX = 56; // chart container height px
+
 // Mini bar chart showing last 7 days (today = rightmost)
 function WeeklyChart({ completedToday }: { completedToday: number }) {
   const today = new Date();
-  // Generate plausible mock bars; only today's is real
   const bars = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
     const isToday = i === 6;
-    const height = isToday ? Math.min(completedToday * 20 + 10, 100)
-      : Math.floor(Math.random() * 55 + 20);
-    return { day: DAYS_MN[d.getDay()], height, isToday };
+    const pct = isToday
+      ? Math.min(completedToday * 20 + 10, 100)
+      : seededHeight(d.toISOString().slice(0, 10));
+    return { day: DAYS_MN[d.getDay()], px: Math.round((pct / 100) * MAX_PX), isToday };
   });
 
   return (
@@ -40,18 +49,21 @@ function WeeklyChart({ completedToday }: { completedToday: number }) {
           энэ 7 хоног
         </span>
       </div>
-      <div className="flex items-end justify-between gap-1.5 h-16">
-        {bars.map(({ day, height, isToday }) => (
+      <div className="flex items-end justify-between gap-1.5" style={{ height: MAX_PX + 18 }}>
+        {bars.map(({ day, px, isToday }) => (
           <div key={day} className="flex flex-col items-center gap-1.5 flex-1">
-            <div className="w-full rounded-t-md transition-all duration-700 relative overflow-hidden"
-              style={{ height: `${height}%`, background: isToday
-                ? 'linear-gradient(to top, #6366f1, #8b5cf6)'
-                : 'var(--bar-color)' }}
-              /* @ts-ignore */
-              // eslint-disable-next-line react/no-unknown-property
-              css={{ '--bar-color': '#e5e7eb' }}
+            <div
+              className="w-full rounded-t-md transition-all duration-700"
+              style={{
+                height: px,
+                background: isToday
+                  ? 'linear-gradient(to top, #6366f1, #8b5cf6)'
+                  : undefined,
+              }}
             >
-              <div className={`absolute inset-0 rounded-t-md ${isToday ? 'bg-linear-to-t from-indigo-500 to-violet-500' : 'bg-gray-200 dark:bg-slate-700'}`} />
+              {!isToday && (
+                <div className="w-full h-full rounded-t-md bg-gray-200 dark:bg-slate-700" />
+              )}
             </div>
             <span className={`text-[9px] font-semibold ${isToday ? 'text-indigo-500 dark:text-indigo-400' : 'text-gray-400 dark:text-slate-600'}`}>
               {day}
