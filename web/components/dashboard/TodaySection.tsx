@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from "react";
-import { CheckCircle2, Circle, Clock, Flag, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { CheckCircle2, Circle, Clock, Flag, Pencil, Trash2 } from "lucide-react";
 
 export type Task = {
   id: string;
@@ -9,19 +9,20 @@ export type Task = {
   description?: string | null;
   time: string;
   due: string;
-  priority: "High" | "Medium";
+  priority: "High" | "Medium" | "Low";
   category: string;
   completed: boolean;
 };
 
-type UpdateFields = { priority?: 'high' | 'medium' | 'low'; due?: string; category?: string };
+type UpdateFields = { priority?: 'high' | 'medium' | 'low'; due?: string; category?: string; title?: string };
 type EditField = 'priority' | 'due' | 'category' | null;
 
 const priorityStyles: Record<Task["priority"], string> = {
   High:   "bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400",
   Medium: "bg-yellow-50 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400",
+  Low:    "bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400",
 };
-const priorityLabels: Record<Task["priority"], string> = { High: "Өндөр", Medium: "Дунд" };
+const priorityLabels: Record<Task["priority"], string> = { High: "Өндөр", Medium: "Дунд", Low: "Бага" };
 
 const CATEGORIES = ['Ажил', 'Хувийн', 'Гэр бүл', 'Эрүүл мэнд', 'Хичээл', 'Уулзалт', 'Хөгжүүлэлт', 'Бусад'];
 
@@ -31,10 +32,25 @@ function TaskCard({ task, onToggle, onUpdate, onDelete }: {
   onUpdate?: (id: string, fields: UpdateFields) => void;
   onDelete?: (id: string) => void;
 }) {
-  const [editing, setEditing] = useState<EditField>(null);
-  const [dueVal, setDueVal]   = useState(task.due?.slice(0, 16) || '');
+  const [editing, setEditing]     = useState<EditField>(null);
+  const [dueVal, setDueVal]       = useState(task.due?.slice(0, 16) || '');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleVal, setTitleVal]   = useState(task.title);
+  const titleRef = useRef<HTMLInputElement>(null);
 
   function toggle(f: EditField) { setEditing(prev => prev === f ? null : f); }
+
+  function startTitleEdit() {
+    setTitleVal(task.title);
+    setEditingTitle(true);
+    setTimeout(() => titleRef.current?.select(), 50);
+  }
+
+  function saveTitleEdit() {
+    const trimmed = titleVal.trim();
+    if (trimmed && trimmed !== task.title) onUpdate?.(task.id, { title: trimmed });
+    setEditingTitle(false);
+  }
 
   return (
     <div className={`flex gap-3 p-4 rounded-xl border transition-all duration-200 group ${
@@ -49,9 +65,21 @@ function TaskCard({ task, onToggle, onUpdate, onDelete }: {
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${task.completed ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-800 dark:text-slate-100"}`}>
-          {task.title}
-        </p>
+        {editingTitle ? (
+          <input
+            ref={titleRef}
+            value={titleVal}
+            onChange={e => setTitleVal(e.target.value)}
+            onBlur={saveTitleEdit}
+            onKeyDown={e => { if (e.key === 'Enter') saveTitleEdit(); if (e.key === 'Escape') setEditingTitle(false); }}
+            className="w-full text-sm font-medium bg-transparent border-b border-indigo-400 outline-none text-gray-800 dark:text-slate-100 pb-0.5"
+            autoFocus
+          />
+        ) : (
+          <p className={`text-sm font-medium ${task.completed ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-800 dark:text-slate-100"}`}>
+            {task.title}
+          </p>
+        )}
         {task.description && <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{task.description}</p>}
 
         <div className="flex flex-wrap gap-2 mt-2">
@@ -80,7 +108,7 @@ function TaskCard({ task, onToggle, onUpdate, onDelete }: {
             {([['high','Өндөр'], ['medium','Дунд'], ['low','Бага']] as const).map(([val, lbl]) => (
               <button key={val} onClick={() => { onUpdate?.(task.id, { priority: val }); setEditing(null); }}
                 className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                  (val === 'high' && task.priority === 'High') || (val === 'medium' && task.priority === 'Medium')
+                  (val === 'high' && task.priority === 'High') || (val === 'medium' && task.priority === 'Medium') || (val === 'low' && task.priority === 'Low')
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
                     : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
                 }`}>
@@ -118,11 +146,17 @@ function TaskCard({ task, onToggle, onUpdate, onDelete }: {
         )}
       </div>
 
-      {/* Delete */}
-      <button onClick={() => onDelete?.(task.id)}
-        className="shrink-0 mt-0.5 p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
-        <Trash2 size={15} />
-      </button>
+      {/* Edit + Delete */}
+      <div className="flex flex-row gap-0.5 shrink-0 mt-0.5">
+        <button onClick={startTitleEdit}
+          className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
+          <Pencil size={14} />
+        </button>
+        <button onClick={() => onDelete?.(task.id)}
+          className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
   );
 }

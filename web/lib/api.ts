@@ -38,7 +38,7 @@ export async function createTask(body: {
 
 export async function updateTask(
   id: string,
-  body: { status?: 'pending' | 'done'; priority?: string; category?: string }
+  body: { status?: 'pending' | 'done'; priority?: string; category?: string; title?: string; due?: string }
 ) {
   const { data } = await api.patch(`/api/tasks/${id}`, body);
   return data as BackendTask;

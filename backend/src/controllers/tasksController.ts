@@ -40,11 +40,13 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { status, priority, category } = req.body as { status?: string; priority?: string; category?: string };
+    const { status, priority, category, title, due } = req.body as { status?: string; priority?: string; category?: string; title?: string; due?: string };
     const update: Record<string, string> = {};
-    if (status !== undefined) update.status = status;
+    if (title    !== undefined) update.title    = title;
+    if (status   !== undefined) update.status   = status;
     if (priority !== undefined) update.priority = priority;
     if (category !== undefined) update.category = category;
+    if (due      !== undefined) update.due      = due;
 
     if (!isDbReady()) {
       const task = mockTasks.find((t) => t._id === req.params.id && t.uid === req.uid);

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle2, Circle, Clock, Flag, Trash2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { CheckCircle2, Circle, Clock, Flag, Pencil, Trash2 } from 'lucide-react';
 import { BackendTask } from '@/lib/api';
 
 const priorityConfig: Record<string, { label: string; className: string }> = {
@@ -34,12 +34,26 @@ type EditField = 'priority' | 'due' | 'category' | null;
 export default function TaskCard({ task, onToggle, onUpdate, onDelete }: {
   task: BackendTask;
   onToggle: (id: string, done: boolean) => void;
-  onUpdate: (id: string, fields: Partial<Pick<BackendTask, 'priority' | 'due' | 'category'>>) => void;
+  onUpdate: (id: string, fields: Partial<Pick<BackendTask, 'priority' | 'due' | 'category'>> & { title?: string }) => void;
   onDelete: (id: string) => void;
 }) {
-  const [editing, setEditing] = useState<EditField>(null);
-  const [dueVal, setDueVal]   = useState(task.due?.slice(0, 16) || '');
-  const done     = task.status === 'done';
+  const [editing, setEditing]           = useState<EditField>(null);
+  const [dueVal, setDueVal]             = useState(task.due?.slice(0, 16) || '');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleVal, setTitleVal]         = useState(task.title);
+  const titleRef                        = useRef<HTMLInputElement>(null);
+  const done = task.status === 'done';
+
+  function startTitleEdit() {
+    setTitleVal(task.title);
+    setEditingTitle(true);
+    setTimeout(() => titleRef.current?.select(), 50);
+  }
+  function saveTitleEdit() {
+    const trimmed = titleVal.trim();
+    if (trimmed && trimmed !== task.title) onUpdate(task._id, { title: trimmed });
+    setEditingTitle(false);
+  }
   const priority = priorityConfig[task.priority] ?? priorityConfig.medium;
   const catClass = categoryColors[task.category] ?? 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400';
 
@@ -64,18 +78,32 @@ export default function TaskCard({ task, onToggle, onUpdate, onDelete }: {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium leading-snug ${done ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-800 dark:text-slate-100'}`}>
-          {task.title}
-        </p>
+        {editingTitle ? (
+          <input
+            ref={titleRef}
+            value={titleVal}
+            onChange={e => setTitleVal(e.target.value)}
+            onBlur={saveTitleEdit}
+            onKeyDown={e => { if (e.key === 'Enter') saveTitleEdit(); if (e.key === 'Escape') setEditingTitle(false); }}
+            className="w-full text-sm font-medium bg-transparent border-b border-indigo-400 outline-none text-gray-800 dark:text-slate-100 pb-0.5"
+            autoFocus
+          />
+        ) : (
+          <p className={`text-sm font-medium leading-snug ${done ? 'line-through text-gray-400 dark:text-slate-500' : 'text-gray-800 dark:text-slate-100'}`}>
+            {task.title}
+          </p>
+        )}
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mt-2">
-          {/* Due */}
-          <button onClick={() => toggle('due')}
-            className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
-            <Clock size={11} />
-            {task.due ? formatDue(task.due) : new Date().toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' })}
-          </button>
+          {/* Due — зөвхөн хийгдээгүй task-д */}
+          {!done && (
+            <button onClick={() => toggle('due')}
+              className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-700 px-2 py-0.5 rounded-full hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">
+              <Clock size={11} />
+              {task.due ? formatDue(task.due) : new Date().toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' })}
+            </button>
+          )}
 
           {/* Priority */}
           <button onClick={() => toggle('priority')}
@@ -131,11 +159,17 @@ export default function TaskCard({ task, onToggle, onUpdate, onDelete }: {
         )}
       </div>
 
-      {/* Delete */}
-      <button onClick={() => onDelete(task._id)}
-        className="shrink-0 mt-0.5 p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
-        <Trash2 size={15} />
-      </button>
+      {/* Edit + Delete */}
+      <div className="flex flex-row gap-0.5 shrink-0 mt-0.5">
+        <button onClick={startTitleEdit}
+          className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
+          <Pencil size={14} />
+        </button>
+        <button onClick={() => onDelete(task._id)}
+          className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+          <Trash2 size={14} />
+        </button>
+      </div>
     </div>
   );
 }
