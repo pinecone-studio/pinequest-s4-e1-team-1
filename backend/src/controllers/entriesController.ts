@@ -9,7 +9,7 @@ export const createEntry = async (req: Request, res: Response) => {
   try {
     const { text, tasks = [], events = [], summary = '' } = req.body as {
       text: string;
-      tasks: { title: string; due: string }[];
+      tasks: { title: string; due: string; priority?: string; category?: string }[];
       events: { title: string; datetime: string }[];
       summary: string;
     };
@@ -24,7 +24,7 @@ export const createEntry = async (req: Request, res: Response) => {
 
     if (tasks.length) {
       await Task.insertMany(
-        tasks.map((t) => ({ uid: req.uid, title: t.title, due: t.due, entryId: entry._id }))
+        tasks.map((t) => ({ uid: req.uid, title: t.title, due: t.due, priority: t.priority ?? 'medium', category: t.category ?? '', entryId: entry._id }))
       );
     }
 
