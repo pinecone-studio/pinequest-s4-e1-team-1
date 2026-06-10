@@ -262,6 +262,20 @@ export default function RecordOverlay({ onClose }: { onClose: () => void }) {
                     <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{task.title}</p>
                   </div>
 
+                  {/* If AI already recognized date → just show it, no input needed */}
+                  {task.date ? (
+                    <div className="flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 rounded-xl px-3 py-2">
+                      <Calendar size={11} />
+                      <span>{task.date}{task.time ? ` · ${task.time}` : ''}</span>
+                      <button
+                        onClick={() => updateTask(i, { date: '', time: '', inputMode: 'pick' })}
+                        className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                      >
+                        <Clock size={11} /> <span className="text-[10px]">өөрчлөх</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <>
                   {/* Mode toggle */}
                   <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-slate-600">
                     <button
@@ -351,8 +365,10 @@ export default function RecordOverlay({ onClose }: { onClose: () => void }) {
                       </p>
                     </div>
                   )}
+                  </>
+                  )}
 
-                  {/* Urgency */}
+                  {/* Urgency - always shown */}
                   <div className="flex flex-col gap-2">
                     <p className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-1">
                       <Flame size={11} /> Яаралтай уу?

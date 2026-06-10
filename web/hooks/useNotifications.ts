@@ -1,20 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { fetchTasks } from '@/lib/api';
+import { fetchTasks, getFriendRequests } from '@/lib/api';
 
-export type AppNotification = {
-  id: string;
-  title: string;
-  minutesLeft: number;
-  priority: 'high' | 'medium' | 'low';
-};
+export type AppNotification =
+  | { type: 'task'; id: string; title: string; minutesLeft: number; priority: 'high' | 'medium' | 'low' }
+  | { type: 'friend_request'; id: string; title: string; requestId: string; fromUsername: string };
 
 function getThreshold(priority: string) {
-  return priority === 'high' ? 24 * 60 : 60; // high=1 өдөр, бусад=1 цаг (минутаар)
+  return priority === 'high' ? 24 * 60 : 60;
 }
 
-function formatTimeLeft(minutesLeft: number) {
+export function formatTimeLeft(minutesLeft: number) {
   if (minutesLeft === 0) return 'Одоо дуусч байна!';
   if (minutesLeft >= 60) {
     const h = Math.round(minutesLeft / 60);
@@ -22,8 +19,6 @@ function formatTimeLeft(minutesLeft: number) {
   }
   return `${minutesLeft} минутын дараа`;
 }
-
-export { formatTimeLeft };
 
 const STORAGE_KEY = 'dismissed-notifications';
 
@@ -49,30 +44,45 @@ export function useNotifications() {
 
   const check = useCallback(async () => {
     try {
-      const tasks = await fetchTasks();
-      const now   = new Date();
+      const [tasks, friendReqs] = await Promise.all([
+        fetchTasks(),
+        getFriendRequests().catch(() => []),
+      ]);
 
-      const upcoming: AppNotification[] = tasks
-        .filter((t) => t.status !== 'done' && t.due?.includes('T'))
-        .map((t) => {
+      const now = new Date();
+
+      const taskNotifs: AppNotification[] = tasks
+        .filter(t => t.status !== 'done' && t.due?.includes('T'))
+        .map(t => {
           const minutesLeft = Math.round((new Date(t.due).getTime() - now.getTime()) / 60000);
-          return { id: t._id, title: t.title, minutesLeft, priority: t.priority };
+          return { type: 'task' as const, id: t._id, title: t.title, minutesLeft, priority: t.priority };
         })
-        .filter((n) => n.minutesLeft >= 0 && n.minutesLeft <= getThreshold(n.priority));
+        .filter(n => n.minutesLeft >= 0 && n.minutesLeft <= getThreshold(n.priority));
 
-      upcoming.forEach((n) => {
+      const friendNotifs: AppNotification[] = friendReqs.map(r => ({
+        type: 'friend_request' as const,
+        id: `fr_${r.id}`,
+        title: `@${r.username} найзын хүсэлт илгээлээ`,
+        requestId: r.id,
+        fromUsername: r.username,
+      }));
+
+      const all = [...taskNotifs, ...friendNotifs];
+
+      all.forEach(n => {
         if (!browserNotified.current.has(n.id)) {
           browserNotified.current.add(n.id);
           if (typeof window !== 'undefined' && Notification.permission === 'granted') {
-            new Notification(`⏰ ${n.title}`, {
-              body: formatTimeLeft(n.minutesLeft),
+            const body = n.type === 'task' ? formatTimeLeft(n.minutesLeft) : 'Найзын хүсэлт';
+            new Notification(n.type === 'task' ? `⏰ ${n.title}` : `👋 ${n.title}`, {
+              body,
               icon: '/favicon.ico',
             });
           }
         }
       });
 
-      setNotifications(upcoming.filter((n) => !dismissed.has(n.id)));
+      setNotifications(all.filter(n => !dismissed.has(n.id)));
     } catch {
       // silent fail
     }
@@ -86,12 +96,12 @@ export function useNotifications() {
 
   useEffect(() => {
     check();
-    const id = setInterval(check, 60_000);
+    const id = setInterval(check, 30_000);
     return () => clearInterval(id);
   }, [check]);
 
   function dismiss(id: string) {
-    setDismissed((prev) => {
+    setDismissed(prev => {
       const next = new Set([...prev, id]);
       saveDismissed(next);
       return next;
@@ -99,8 +109,8 @@ export function useNotifications() {
   }
 
   function dismissAll() {
-    setDismissed((prev) => {
-      const next = new Set([...prev, ...notifications.map((n) => n.id)]);
+    setDismissed(prev => {
+      const next = new Set([...prev, ...notifications.map(n => n.id)]);
       saveDismissed(next);
       return next;
     });

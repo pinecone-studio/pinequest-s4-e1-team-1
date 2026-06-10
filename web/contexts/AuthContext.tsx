@@ -8,10 +8,13 @@ import {
   OAuthProvider, signInWithPopup,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { getMe } from '@/lib/api';
 
 type AuthCtx = {
   user: User | null;
   loading: boolean;
+  username: string | null;
+  setUsername: (u: string) => void;
   getToken: () => Promise<string>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signupWithEmail: (email: string, password: string) => Promise<void>;
@@ -24,11 +27,25 @@ type AuthCtx = {
 const AuthContext = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]         = useState<User | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      if (u) {
+        try {
+          const me = await getMe();
+          setUsername(me.username);
+        } catch {
+          setUsername(null);
+        }
+      } else {
+        setUsername(null);
+      }
+      setLoading(false);
+    });
     return unsub;
   }, []);
 
@@ -39,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, getToken,
+      user, loading, username, setUsername, getToken,
       loginWithEmail: (e, p) => signInWithEmailAndPassword(auth, e, p).then(() => {}),
       signupWithEmail: (e, p) => createUserWithEmailAndPassword(auth, e, p).then(() => {}),
       loginWithGoogle: async () => { await signInWithPopup(auth, new GoogleAuthProvider()); },

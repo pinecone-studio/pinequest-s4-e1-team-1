@@ -233,6 +233,20 @@ export default function RecordSection() {
                   <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{task.title}</p>
                 </div>
 
+                {/* If AI already recognized date → just show it */}
+                {task.date ? (
+                  <div className="flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg px-3 py-2">
+                    <Calendar size={10} />
+                    <span>{task.date}{task.time ? ` · ${task.time}` : ''}</span>
+                    <button
+                      onClick={() => updateTask(i, { date: '', time: '', inputMode: 'pick' })}
+                      className="ml-auto text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors text-[10px]"
+                    >
+                      өөрчлөх
+                    </button>
+                  </div>
+                ) : (
+                  <>
                 {/* Mode toggle */}
                 <div className="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600">
                   <button
@@ -319,8 +333,10 @@ export default function RecordSection() {
                     </p>
                   </div>
                 )}
+                  </>
+                )}
 
-                {/* Urgency */}
+                {/* Urgency - always shown */}
                 <div className="flex flex-col gap-1.5">
                   <p className="text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1">
                     <Flame size={10} /> Яаралтай уу?

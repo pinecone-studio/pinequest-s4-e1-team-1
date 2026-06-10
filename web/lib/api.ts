@@ -98,3 +98,59 @@ export async function fetchReport(date: string, period: ReportPeriod = 'day', ty
   const { data } = await api.post('/api/report', { date, period, type });
   return data as ReportData;
 }
+
+// ── User / username ──────────────────────────────────────────────────
+export async function getMe() {
+  const { data } = await api.get('/api/user/me');
+  return data as { username: string | null };
+}
+
+export async function setUsername(username: string) {
+  const { data } = await api.post('/api/user/username', { username });
+  return data as { username: string };
+}
+
+export async function searchUsers(username: string) {
+  const { data } = await api.get('/api/user/search', { params: { username } });
+  return data as { uid: string; username: string }[];
+}
+
+// ── Friends ──────────────────────────────────────────────────────────
+export type Friend = { uid: string; username: string };
+export type FriendRequest = { id: string; fromUid: string; username: string };
+export type DayAvailability = { taskCount: number; busyTimes: string[] };
+
+export async function getFriends() {
+  const { data } = await api.get('/api/friends');
+  return data as Friend[];
+}
+
+export async function sendFriendRequest(username: string) {
+  const { data } = await api.post('/api/friends/request', { username });
+  return data as { success: boolean };
+}
+
+export async function getFriendRequests() {
+  const { data } = await api.get('/api/friends/requests');
+  return data as FriendRequest[];
+}
+
+export async function acceptFriendRequest(id: string) {
+  const { data } = await api.post(`/api/friends/accept/${id}`);
+  return data as { success: boolean };
+}
+
+export async function rejectFriendRequest(id: string) {
+  const { data } = await api.post(`/api/friends/reject/${id}`);
+  return data as { success: boolean };
+}
+
+export async function removeFriend(friendUid: string) {
+  const { data } = await api.delete(`/api/friends/${friendUid}`);
+  return data as { success: boolean };
+}
+
+export async function getFriendCalendar(friendUid: string, month: string) {
+  const { data } = await api.get(`/api/friends/${friendUid}/calendar`, { params: { month } });
+  return data as Record<string, DayAvailability>;
+}
