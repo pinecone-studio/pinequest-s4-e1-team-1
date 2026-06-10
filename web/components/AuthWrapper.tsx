@@ -4,11 +4,12 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from './NavBar';
+import UsernameSetup from './UsernameSetup';
 
 const PUBLIC = ['/login', '/landing'];
 
 export default function AuthWrapper({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, username } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const isPublic = PUBLIC.includes(pathname);
@@ -32,6 +33,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
   return (
     <>
       {user && <NavBar />}
+      {user && !isPublic && username === null && <UsernameSetup />}
       <main className="flex-1 flex flex-col">{children}</main>
     </>
   );

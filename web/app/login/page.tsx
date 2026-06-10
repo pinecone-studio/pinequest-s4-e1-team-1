@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Activity } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { setUsername as apiSetUsername } from "@/lib/api";
 import Link from "next/link";
 
 type Mode = "login" | "signup" | "forgot";
@@ -42,11 +43,12 @@ function MagButton({ children, onClick, disabled, className }: any) {
 }
 
 export default function LoginPage() {
-  const { loginWithEmail, signupWithEmail, loginWithGoogle, resetPassword } =
+  const { loginWithEmail, signupWithEmail, loginWithGoogle, resetPassword, setUsername: setCtxUsername } =
     useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsernameInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -60,11 +62,21 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     setInfo("");
+
+    if (mode === "signup" && !/^[a-z0-9_]{3,20}$/.test(username)) {
+      setError("Username 3-20 тэмдэгт, зөвхөн a-z, 0-9, _ байх ёстой");
+      return;
+    }
+
     setLoading(true);
     try {
-      if (mode === "login") await loginWithEmail(email, password);
-      else if (mode === "signup") await signupWithEmail(email, password);
-      else {
+      if (mode === "login") {
+        await loginWithEmail(email, password);
+      } else if (mode === "signup") {
+        await signupWithEmail(email, password);
+        const res = await apiSetUsername(username);
+        setCtxUsername(res.username);
+      } else {
         await resetPassword(email);
         setInfo("Нууц үг сэргээх линк илгээлээ.");
       }
@@ -252,6 +264,21 @@ export default function LoginPage() {
                 </div>
               )}
 
+              {mode === "signup" && (
+                <div className="group relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm select-none">@</span>
+                  <input
+                    type="text"
+                    placeholder="username"
+                    value={username}
+                    onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    maxLength={20}
+                    required
+                    className="input-field w-full border border-white/10 bg-white/5 hover:bg-white/8 focus:bg-white/10 rounded-2xl pl-8 pr-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-transparent transition-all duration-300"
+                  />
+                </div>
+              )}
+
               {error && (
                 <p className="text-red-400 text-xs p-3 rounded-xl bg-red-500/10 border border-red-500/20">
                   {error}
@@ -315,13 +342,13 @@ export default function LoginPage() {
               {mode === "login" && (
                 <>
                   <button
-                    onClick={() => setMode("signup")}
+                    onClick={() => { setMode("signup"); setError(""); setUsernameInput(""); }}
                     className="text-sm text-white/40 hover:text-white transition-colors duration-200"
                   >
                     Бүртгэл үүсгэх
                   </button>
                   <button
-                    onClick={() => setMode("forgot")}
+                    onClick={() => { setMode("forgot"); setError(""); }}
                     className="text-sm text-white/40 hover:text-white transition-colors duration-200"
                   >
                     Нууц үг мартсан?
@@ -330,7 +357,7 @@ export default function LoginPage() {
               )}
               {(mode === "signup" || mode === "forgot") && (
                 <button
-                  onClick={() => setMode("login")}
+                  onClick={() => { setMode("login"); setError(""); setUsernameInput(""); }}
                   className="text-sm text-white/40 hover:text-white transition-colors duration-200 flex items-center gap-1"
                 >
                   ← Нэвтрэх

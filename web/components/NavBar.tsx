@@ -9,6 +9,7 @@ import {
   CheckSquare,
   Calendar,
   BarChart2,
+  Users,
   Bell,
   Moon,
   Sun,
@@ -20,6 +21,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useNotifications, formatTimeLeft } from "@/hooks/useNotifications";
+import { acceptFriendRequest, rejectFriendRequest } from "@/lib/api";
 import RecordOverlay from "@/components/RecordOverlay";
 
 const tabs = [
@@ -27,6 +29,7 @@ const tabs = [
   { href: "/tasks", label: "Даалгавар", icon: CheckSquare },
   { href: "/calendar", label: "Календарь", icon: Calendar },
   { href: "/insights", label: "Тайлан", icon: BarChart2 },
+  { href: "/friends", label: "Найзууд", icon: Users },
 ];
 
 function getInitials(user: {
@@ -41,7 +44,7 @@ function getInitials(user: {
 export default function NavBar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, user } = useAuth();
+  const { logout, user, username } = useAuth();
   const { notifications, dismiss, dismissAll } = useNotifications();
 
   const [dark, setDark] = useState(false);
@@ -77,6 +80,16 @@ export default function NavBar() {
     dismiss(id);
     setShowNotif(false);
     router.push("/tasks");
+  }
+
+  async function handleAcceptFriend(requestId: string, notifId: string) {
+    await acceptFriendRequest(requestId);
+    dismiss(notifId);
+  }
+
+  async function handleRejectFriend(requestId: string, notifId: string) {
+    await rejectFriendRequest(requestId);
+    dismiss(notifId);
   }
 
   const createdAt = user?.metadata?.creationTime
@@ -172,38 +185,72 @@ export default function NavBar() {
                   </div>
                 ) : (
                   <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700">
-                    {notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
-                      >
-                        <button
-                          onClick={() => handleNotifClick(n.id)}
-                          className="flex items-start gap-3 flex-1 text-left"
-                        >
-                          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0 mt-0.5">
-                            <Clock
-                              size={13}
-                              className="text-amber-600 dark:text-amber-400"
-                            />
+                    {notifications.map((n) => {
+                      if (n.type === 'friend_request') {
+                        return (
+                          <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center shrink-0 mt-0.5 text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                              {n.fromUsername[0].toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 dark:text-slate-100">
+                                @{n.fromUsername}
+                              </p>
+                              <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-0.5 mb-2">
+                                Найзын хүсэлт илгээлээ
+                              </p>
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={() => handleAcceptFriend(n.requestId, n.id)}
+                                  className="flex items-center gap-1 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors"
+                                >
+                                  Зөвшөөрөх
+                                </button>
+                                <button
+                                  onClick={() => handleRejectFriend(n.requestId, n.id)}
+                                  className="flex items-center gap-1 px-2.5 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-slate-300 text-xs font-semibold rounded-lg transition-colors"
+                                >
+                                  Татгалзах
+                                </button>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => dismiss(n.id)}
+                              className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 shrink-0 mt-1 transition-colors"
+                            >
+                              <X size={13} />
+                            </button>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 dark:text-slate-100 truncate">
-                              {n.title}
-                            </p>
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-                              {formatTimeLeft(n.minutesLeft)}
-                            </p>
-                          </div>
-                        </button>
-                        <button
-                          onClick={() => dismiss(n.id)}
-                          className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 shrink-0 mt-1 transition-colors"
-                        >
-                          <X size={13} />
-                        </button>
-                      </div>
-                    ))}
+                        );
+                      }
+
+                      return (
+                        <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                          <button
+                            onClick={() => handleNotifClick(n.id)}
+                            className="flex items-start gap-3 flex-1 text-left"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0 mt-0.5">
+                              <Clock size={13} className="text-amber-600 dark:text-amber-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800 dark:text-slate-100 truncate">
+                                {n.title}
+                              </p>
+                              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                {formatTimeLeft(n.minutesLeft)}
+                              </p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => dismiss(n.id)}
+                            className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 shrink-0 mt-1 transition-colors"
+                          >
+                            <X size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -240,7 +287,7 @@ export default function NavBar() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {user?.displayName || "Хэрэглэгч"}
+                      {username || user?.displayName || "Хэрэглэгч"}
                     </p>
                     <p className="text-xs text-gray-400 dark:text-slate-500 truncate">
                       {user?.email}
