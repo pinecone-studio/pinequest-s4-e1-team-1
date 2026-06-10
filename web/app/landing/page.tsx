@@ -357,7 +357,10 @@ function AppPreview() {
             { val: "3", label: "Хүлээгдэж буй", col: "#f59e0b" },
             { val: "87%", label: "Гүйцэтгэл", col: "#f9a8d4" },
           ].map(({ val, label, col }) => (
-            <div key={label} className="px-4 py-5 group/stat cursor-default transition-all duration-300 hover:bg-white/3">
+            <div
+              key={label}
+              className="px-4 py-5 group/stat cursor-default transition-all duration-300 hover:bg-white/3"
+            >
               <div className="text-[10px] text-white/40 font-medium uppercase tracking-wide mb-2">
                 {label}
               </div>
@@ -400,7 +403,9 @@ function AppPreview() {
                   background: mic
                     ? "linear-gradient(135deg,#db2777,#f59e0b)"
                     : "linear-gradient(135deg,#7c3aed,#db2777)",
-                  boxShadow: mic ? "0 0 30px rgba(219,39,119,.4)" : "0 0 20px rgba(124,58,237,.3)",
+                  boxShadow: mic
+                    ? "0 0 30px rgba(219,39,119,.4)"
+                    : "0 0 20px rgba(124,58,237,.3)",
                 }}
               >
                 <Mic size={19} color="white" />
@@ -421,7 +426,7 @@ function AppPreview() {
                 {[4, 7, 5, 9, 3, 8, 5, 6, 4, 7].map((h, i) => (
                   <div
                     key={i}
-                    className="wave-bar w-1 rounded-full bg-gradient-to-t from-violet-400 to-pink-400"
+                    className="wave-bar w-1 rounded-full bg-linear-to-t from-violet-400 to-pink-400"
                     style={{ height: h * 2.5, animationDelay: `${i * 60}ms` }}
                   />
                 ))}
@@ -435,7 +440,9 @@ function AppPreview() {
               Өнөөдрийн даалгаврууд
             </div>
             <div className="text-[11px] text-white/30">
-              {aiTasks.length > 0 ? `${aiTasks.length} даалгавар` : `${STATIC.length} даалгавар`}
+              {aiTasks.length > 0
+                ? `${aiTasks.length} даалгавар`
+                : `${STATIC.length} даалгавар`}
             </div>
           </div>
 
@@ -450,7 +457,9 @@ function AppPreview() {
                     <div className="w-4 h-4 rounded-full border-2 border-violet-400/60 flex items-center justify-center shrink-0 group-hover/task:border-violet-400 transition-colors">
                       <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
                     </div>
-                    <span className="text-[13px] text-white/70 group-hover/task:text-white/90 transition-colors font-medium flex-1">{t}</span>
+                    <span className="text-[13px] text-white/70 group-hover/task:text-white/90 transition-colors font-medium flex-1">
+                      {t}
+                    </span>
                   </div>
                 ))
               : STATIC.map(({ title, time, done }) => (
@@ -464,7 +473,10 @@ function AppPreview() {
                         className="text-emerald-400 shrink-0 group-hover/task:text-emerald-300 transition-colors"
                       />
                     ) : (
-                      <Circle size={16} className="text-white/30 shrink-0 group-hover/task:text-white/40 transition-colors" />
+                      <Circle
+                        size={16}
+                        className="text-white/30 shrink-0 group-hover/task:text-white/40 transition-colors"
+                      />
                     )}
                     <span
                       className={`flex-1 text-[13px] transition-all duration-300 ${done ? "line-through text-white/25 group-hover/task:text-white/35" : "text-white/60 group-hover/task:text-white/75"}`}
@@ -688,14 +700,18 @@ export default function LandingPage() {
         }`}
         style={{
           transform: headerVisible ? "translateY(0)" : "translateY(-100%)",
-          transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1), background-color 300ms ease, border-color 300ms ease",
+          transition:
+            "transform 500ms cubic-bezier(0.22, 1, 0.36, 1), background-color 300ms ease, border-color 300ms ease",
           willChange: "transform",
         }}
       >
         {/* Max width container for Apple-like design */}
         <div className="w-full max-w-6xl px-4 sm:px-8 flex items-center justify-between">
           {/* Logo */}
-          <Link href="#" className="flex items-center gap-2 shrink-0 group/logo">
+          <Link
+            href="#"
+            className="flex items-center gap-2 shrink-0 group/logo"
+          >
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300"
               style={{
@@ -735,7 +751,9 @@ export default function LandingPage() {
             <Link
               href="/login"
               className={`text-sm font-medium transition-all duration-300 hidden sm:block ${
-                scrolled ? "text-white/60 hover:text-white" : "text-white/50 hover:text-white"
+                scrolled
+                  ? "text-white/60 hover:text-white"
+                  : "text-white/50 hover:text-white"
               }`}
             >
               Нэвтрэх
@@ -749,7 +767,10 @@ export default function LandingPage() {
             >
               <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
               <span className="relative">Эхлэх</span>
-              <ArrowRight size={14} className="relative group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight
+                size={14}
+                className="relative group-hover:translate-x-0.5 transition-transform"
+              />
             </Link>
           </div>
         </div>
@@ -779,9 +800,13 @@ export default function LandingPage() {
             <span className="block text-white drop-shadow-lg">
               <ScrambleText text="Ярьж тэмдэглэ." visible={heroVis} />
             </span>
-            <span className="block gradient-text drop-shadow-lg" style={{
-              textShadow: '0 0 30px rgba(124,58,237,.3), 0 0 60px rgba(219,39,119,.2)'
-            }}>
+            <span
+              className="block gradient-text drop-shadow-lg"
+              style={{
+                textShadow:
+                  "0 0 30px rgba(124,58,237,.3), 0 0 60px rgba(219,39,119,.2)",
+              }}
+            >
               <ScrambleText text="AI бүгдийг" visible={heroVis} />
             </span>
             <span className="block text-white drop-shadow-lg">
@@ -829,7 +854,9 @@ export default function LandingPage() {
                     background: bg,
                     boxShadow: `0 4px 15px ${bg}40`,
                   }}
-                  title={["Анхзул", "Батболд", "Оюун", "Нямдавай", "Тэмүүлэн"][i]}
+                  title={
+                    ["Анхзул", "Батболд", "Оюун", "Нямдавай", "Тэмүүлэн"][i]
+                  }
                 >
                   {["А", "Б", "О", "Н", "Т"][i]}
                 </div>
@@ -837,7 +864,9 @@ export default function LandingPage() {
             </div>
             <div className="text-center">
               <p className="text-[14px] text-white/40">
-                <span className="text-white/80 font-semibold block mb-1">2,400+ хүн</span>
+                <span className="text-white/80 font-semibold block mb-1">
+                  2,400+ хүн
+                </span>
                 өдөр бүр ашигладаг
               </p>
             </div>
@@ -1148,9 +1177,7 @@ export default function LandingPage() {
           >
             <Activity size={11} color="white" />
           </div>
-          <span className="text-[13px] font-black text-white/38">
-            MonTask
-          </span>
+          <span className="text-[13px] font-black text-white/38">MonTask</span>
         </div>
         <p className="text-[11px] text-white/18">
           © 2026 MonTask. Бүх эрх хуулиар хамгаалагдсан.

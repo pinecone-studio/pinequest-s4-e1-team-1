@@ -34,7 +34,7 @@ function toFrontendTask(t: BackendTask): Task {
     description: null,
     due: t.due || '',
     time: t.due ? t.due.slice(11, 16) || t.due.slice(0, 10) : '—',
-    priority: t.priority === 'high' ? 'High' : 'Medium',
+    priority: t.priority === 'high' ? 'High' : t.priority === 'low' ? 'Low' : 'Medium',
     category: t.category || 'Ерөнхий',
     completed: t.status === 'done',
   };
