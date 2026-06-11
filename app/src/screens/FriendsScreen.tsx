@@ -38,7 +38,7 @@ const BUSY_COLOR: Record<'low' | 'medium' | 'high', string> = {
 
 export default function FriendsScreen() {
   const { colors: C, isDark } = useTheme();
-  const cellSize = Math.floor((Dimensions.get('window').width - 32 - 12) / 7);
+  const cellSize = Math.floor((Dimensions.get('window').width - 64) / 7);
 
   // Username
   const [myUsername, setMyUsername] = useState<string | null>(null);

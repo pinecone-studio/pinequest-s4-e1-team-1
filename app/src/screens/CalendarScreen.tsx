@@ -62,7 +62,7 @@ function formatLabel(dateStr: string) {
   return `${parseInt(p[1])}-р сарын ${parseInt(p[2])}`;
 }
 
-const CELL_H = (SW - 32) / 7 + 14;
+const CELL_H = (SW - 32) / 7 + 20;
 
 function CalendarGrid({
   year,
@@ -139,8 +139,8 @@ function CalendarGrid({
                       />
                     ))
                   ) : count > 3 ? (
-                    <View style={[g.badge, { backgroundColor: C.accent }]}>
-                      <Text style={g.badgeText}>{count}</Text>
+                    <View style={[g.countPill, { backgroundColor: C.accentLight }]}>
+                      <Text style={[g.countText, { color: C.accent }]}>{count}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -170,14 +170,14 @@ const g = StyleSheet.create({
   dotRow: {
     flexDirection: "row",
     gap: 2,
-    marginTop: 4,
-    height: 6,
+    marginTop: 3,
+    height: 14,
     alignItems: "center",
     justifyContent: "center",
   },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
-  badge: { borderRadius: 6, paddingHorizontal: 5 },
-  badgeText: { fontSize: 8, color: "#fff", fontWeight: "800" },
+  countPill: { borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, minWidth: 20, alignItems: "center" },
+  countText: { fontSize: 10, fontWeight: "800", lineHeight: 14 },
 });
 
 function TaskRow({ task, C }: { task: Task; C: Colors }) {

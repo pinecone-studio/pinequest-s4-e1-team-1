@@ -88,6 +88,18 @@ export default function LoginPage() {
     }
   };
 
+  const handleDemo = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      await loginWithEmail("demo@montask.mn", "Demo1234!");
+    } catch {
+      setError("Demo акаунт түр боломжгүй байна.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSocial = async (fn: () => Promise<void>) => {
     setError("");
     setLoading(true);
@@ -222,6 +234,15 @@ export default function LoginPage() {
                     />
                   </svg>
                   Google-аар {mode === "login" ? "нэвтрэх" : "бүртгүүлэх"}
+                </MagButton>
+
+                <MagButton
+                  onClick={handleDemo}
+                  disabled={loading}
+                  className="button-social flex items-center justify-center gap-3 w-full border border-violet-500/30 hover:border-violet-500/60 hover:bg-violet-500/10 bg-violet-500/5 rounded-2xl px-4 py-3.5 text-sm font-semibold text-violet-300 hover:text-violet-200 transition-all duration-300"
+                >
+                  <span className="text-base">✦</span>
+                  Demo-оор үзэх
                 </MagButton>
 
                 <div className="flex items-center gap-3 my-2">

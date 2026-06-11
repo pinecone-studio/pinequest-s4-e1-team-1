@@ -157,6 +157,17 @@ export default function LoginScreen() {
 
   const openModal = () => { setMode('login'); setEmailModal(true); };
 
+  const handleDemo = async () => {
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, 'demo@montask.mn', 'Demo1234!');
+    } catch {
+      Alert.alert('Demo', 'Demo акаунт түр боломжгүй байна.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={[s.root, { backgroundColor: C.bg }]}>
 
@@ -215,6 +226,17 @@ export default function LoginScreen() {
             >
               <Text style={s.emailBtnText}>И-мэйлээр нэвтрэх</Text>
             </LinearGradient>
+          </ScaleBtn>
+        </Reanimated.View>
+
+        <Reanimated.View entering={FadeInDown.delay(420).springify()} style={s.emailBtnWrap}>
+          <ScaleBtn onPress={handleDemo}>
+            <View style={[s.demoBtn, { borderColor: C.btnBorder }]}>
+              {loading
+                ? <ActivityIndicator color={C.accent} size="small" />
+                : <Text style={[s.demoBtnText, { color: C.accent }]}>✦ Demo-оор үзэх</Text>
+              }
+            </View>
           </ScaleBtn>
         </Reanimated.View>
 
@@ -408,6 +430,8 @@ const s = StyleSheet.create({
   emailBtnWrap: { width: '100%' },
   emailBtn: { borderRadius: 999, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
   emailBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  demoBtn: { borderRadius: 999, paddingVertical: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  demoBtnText: { fontSize: 15, fontWeight: '600' },
 
   terms:     { fontSize: 12, textAlign: 'center', lineHeight: 19 },
   termsUnder: { textDecorationLine: 'underline' },
