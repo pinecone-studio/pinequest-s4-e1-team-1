@@ -128,6 +128,16 @@ function expandTask(t: ClarifyTask): SaveableTask[] {
 type Phase = 'idle' | 'recording' | 'processing' | 'clarifying' | 'saving' | 'done';
 type Mode = 'voice' | 'text';
 
+type ChatMsg = {
+  id: number;
+  role: 'user' | 'ai';
+  text: string;
+  tasks?: ClarifyTask[];
+  saved?: boolean;
+};
+let _msgId = 0;
+const INITIAL_CHAT: ChatMsg[] = [{ id: 0, role: 'ai', text: 'Юу хийхийг тэмдэглэх вэ? Товч байдлаар хэлнэ үү.' }];
+
 export default function RecordScreen() {
   const { colors, isDark } = useTheme();
   const C = colors;
@@ -139,6 +149,9 @@ export default function RecordScreen() {
   const [transcribed, setTranscribed] = useState('');
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [manualText, setManualText] = useState('');
+  const [chatMsgs, setChatMsgs] = useState<ChatMsg[]>(INITIAL_CHAT);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [clarifyTasks, setClarifyTasks] = useState<ClarifyTask[]>([]);
   const [taskVoiceIdx, setTaskVoiceIdx] = useState<number | null>(null);
   const [taskVoicePhase, setTaskVoicePhase] = useState<'idle' | 'recording' | 'processing'>('idle');
@@ -337,6 +350,39 @@ export default function RecordScreen() {
     }
   };
 
+  const handleChatSend = async () => {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    setChatInput('');
+    const userMsg: ChatMsg = { id: ++_msgId, role: 'user', text };
+    setChatMsgs(prev => [...prev, userMsg]);
+    setChatLoading(true);
+    try {
+      const processed = await processText(text);
+      const tasks: ClarifyTask[] = processed.tasks.map(t => {
+        const { date, time } = parseDue(t.due);
+        return { title: t.title, date, time, urgent: false, inputMode: 'pick', category: t.category || 'Бусад', recurring: t.recurring, recurConfirmed: t.recurring?.confirmed ? true : undefined };
+      });
+      const aiText = tasks.length > 0
+        ? `${tasks.length} даалгавар олдлоо. Хадгалах уу?`
+        : (processed.summary || 'Даалгавар олдсонгүй. Тодорхойлон дахин хэлнэ үү.');
+      setChatMsgs(prev => [...prev, { id: ++_msgId, role: 'ai', text: aiText, tasks: tasks.length ? tasks : undefined }]);
+    } catch {
+      setChatMsgs(prev => [...prev, { id: ++_msgId, role: 'ai', text: 'Алдаа гарлаа. Дахин оролдоно уу.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatSave = async (msgId: number, tasks: ClarifyTask[]) => {
+    try {
+      await saveEntry({ text: '', tasks: tasks.flatMap(expandTask), events: [], summary: '' });
+      setChatMsgs(prev => prev.map(m => m.id === msgId ? { ...m, saved: true } : m));
+    } catch {
+      Alert.alert('Алдаа', 'Хадгалахад алдаа гарлаа');
+    }
+  };
+
   const handleReset = () => {
     setPhase('idle');
     setTranscribed('');
@@ -407,9 +453,9 @@ export default function RecordScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="create-outline" size={16} color={mode === 'text' ? C.accent : C.textMuted} />
+                <Ionicons name="chatbubble-ellipses-outline" size={16} color={mode === 'text' ? C.accent : C.textMuted} />
                 <Text style={[s.tabLabel, { color: mode === 'text' ? C.accent : C.textMuted, fontWeight: mode === 'text' ? '700' : '500' }]}>
-                  Гараар
+                  AI Чат
                 </Text>
               </TouchableOpacity>
             </View>
@@ -482,51 +528,81 @@ export default function RecordScreen() {
             </View>
           )}
 
-          {/* TEXT MODE */}
+          {/* CHAT MODE */}
           {mode === 'text' && showModeTabs && (
-            <View style={s.textMode}>
-              <View style={[s.textInputWrap, {
-                backgroundColor: C.surface,
-                borderColor: isDark ? C.border : '#D1D5DB',
-                shadowOpacity: isDark ? 0.04 : 0.08,
-              }]}>
-                <View style={s.textInputHeader}>
-                  <Ionicons name="create-outline" size={14} color={C.textMuted} />
-                  <Text style={[s.textInputLabel, { color: C.textMuted }]}>ТЭМДЭГЛЭЛ</Text>
+            <View style={s.chatWrap}>
+              {chatMsgs.slice(-10).map(msg => (
+                <View key={msg.id} style={[s.chatRow, msg.role === 'user' ? s.chatRowRight : s.chatRowLeft]}>
+                  {msg.role === 'ai' ? (
+                    <View style={[s.aiBubble, { backgroundColor: C.accentLight }]}>
+                      <View style={s.aiBubbleHeader}>
+                        <Ionicons name="sparkles" size={11} color={C.accent} />
+                        <Text style={[s.aiBubbleLabel, { color: C.accent }]}>MonTask AI</Text>
+                      </View>
+                      <Text style={[s.aiBubbleText, { color: C.text }]}>{msg.text}</Text>
+                      {msg.tasks && !msg.saved && (
+                        <>
+                          {msg.tasks.map((t, ti) => (
+                            <View key={ti} style={[s.chatTaskRow, { borderColor: C.accentMid }]}>
+                              <View style={[s.chatTaskDot, { backgroundColor: C.accent }]} />
+                              <View style={{ flex: 1 }}>
+                                <Text style={[s.chatTaskTitle, { color: C.text }]}>{t.title}</Text>
+                                {!!t.date && <Text style={[s.chatTaskDue, { color: C.textMuted }]}>{t.date}{t.time ? ` · ${t.time}` : ''}</Text>}
+                              </View>
+                            </View>
+                          ))}
+                          <TouchableOpacity
+                            style={[s.chatSaveBtn, { backgroundColor: C.accent }]}
+                            onPress={() => handleChatSave(msg.id, msg.tasks!)}
+                          >
+                            <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                            <Text style={s.chatSaveBtnText}>Хадгалах</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                      {msg.saved && (
+                        <View style={s.chatSavedRow}>
+                          <Ionicons name="checkmark-circle" size={13} color="#10b981" />
+                          <Text style={[s.chatSavedText]}>Хадгалагдлаа ✓</Text>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={[s.userBubble, { backgroundColor: C.accent }]}>
+                      <Text style={s.userBubbleText}>{msg.text}</Text>
+                    </View>
+                  )}
                 </View>
-                <TextInput
-                  style={[s.textInput, { color: C.text }]}
-                  placeholder="Энд бичнэ үү..."
-                  placeholderTextColor={C.textMuted}
-                  multiline
-                  value={manualText}
-                  onChangeText={setManualText}
-                  editable={!isProcessing}
-                  textAlignVertical="top"
-                />
-                <Text style={[s.charCount, { color: C.textMuted }]}>
-                  {manualText.length} тэмдэгт
-                </Text>
-              </View>
+              ))}
+              {chatLoading && (
+                <View style={s.chatRowLeft}>
+                  <View style={[s.aiBubble, { backgroundColor: C.accentLight, paddingVertical: 14 }]}>
+                    <ActivityIndicator size="small" color={C.accent} />
+                  </View>
+                </View>
+              )}
 
-              <TouchableOpacity
-                style={[s.submitBtn, {
-                  backgroundColor: manualText.trim() && !isProcessing ? C.accent : C.border,
-                  shadowColor: C.accent,
-                }]}
-                onPress={handleTextSubmit}
-                disabled={!manualText.trim() || isProcessing}
-                activeOpacity={0.85}
-              >
-                {isProcessing ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <>
-                    <Ionicons name="sparkles-outline" size={18} color="#fff" />
-                    <Text style={s.submitBtnText}>AI боловсруулах</Text>
-                  </>
-                )}
-              </TouchableOpacity>
+              <View style={[s.chatInputRow, { backgroundColor: C.surface, borderColor: isDark ? C.border : '#D1D5DB' }]}>
+                <TextInput
+                  style={[s.chatInput, { color: C.text }]}
+                  placeholder="Даалгавраа бичнэ үү..."
+                  placeholderTextColor={C.textMuted}
+                  value={chatInput}
+                  onChangeText={setChatInput}
+                  multiline
+                  returnKeyType="send"
+                  blurOnSubmit
+                  onSubmitEditing={handleChatSend}
+                />
+                <TouchableOpacity
+                  style={[s.chatSendBtn, { backgroundColor: chatInput.trim() && !chatLoading ? C.accent : C.border }]}
+                  onPress={handleChatSend}
+                  disabled={!chatInput.trim() || chatLoading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="send" size={15} color="#fff" />
+                </TouchableOpacity>
+              </View>
             </View>
           )}
 
@@ -948,7 +1024,30 @@ const s = StyleSheet.create({
   waveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16, height: 40 },
   hintText: { marginTop: 10, fontSize: 13 },
 
-  // Text mode
+  // Chat mode
+  chatWrap: { paddingTop: 8, gap: 10 },
+  chatRow: { flexDirection: 'row' },
+  chatRowLeft: { justifyContent: 'flex-start' },
+  chatRowRight: { justifyContent: 'flex-end' },
+  aiBubble: { maxWidth: '86%', borderRadius: 18, borderTopLeftRadius: 4, padding: 12, gap: 4 },
+  aiBubbleHeader: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 },
+  aiBubbleLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+  aiBubbleText: { fontSize: 14, lineHeight: 20 },
+  userBubble: { maxWidth: '78%', borderRadius: 18, borderTopRightRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
+  userBubbleText: { fontSize: 14, color: '#fff', lineHeight: 20 },
+  chatTaskRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingTop: 8, borderTopWidth: 1, marginTop: 4 },
+  chatTaskDot: { width: 6, height: 6, borderRadius: 3, marginTop: 5, flexShrink: 0 },
+  chatTaskTitle: { fontSize: 13, fontWeight: '600' },
+  chatTaskDue: { fontSize: 11, marginTop: 2 },
+  chatSaveBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, marginTop: 10, alignSelf: 'flex-start' },
+  chatSaveBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  chatSavedRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8 },
+  chatSavedText: { fontSize: 12, fontWeight: '600', color: '#10b981' },
+  chatInputRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, borderWidth: 1, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 8, marginTop: 4 },
+  chatInput: { flex: 1, fontSize: 14, lineHeight: 20, maxHeight: 80, paddingTop: 2 },
+  chatSendBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+
+  // Text mode (kept for handleTextSubmit compatibility)
   textMode: { paddingTop: 16, gap: 14 },
   textInputWrap: {
     borderRadius: 18, borderWidth: 1, padding: 16, minHeight: 180,

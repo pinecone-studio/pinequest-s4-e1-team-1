@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Mic, Square, CheckCircle2, Calendar, Clock, Flame, RefreshCw } from 'lucide-react';
+import { Mic, Square, CheckCircle2, Calendar, Clock, Flame, RefreshCw, Send, Sparkles } from 'lucide-react';
 import { transcribeAudio, processText, saveEntry, parseDatetime, RecurringPattern } from '@/lib/api';
 
 type Result = {
@@ -94,6 +94,9 @@ function expandTask(t: ClarifyTask): SaveableTask[] {
 }
 
 type Status = 'idle' | 'recording' | 'processing' | 'clarifying' | 'saving' | 'done' | 'error';
+type InputTab = 'voice' | 'chat';
+type ChatMsg = { id: number; role: 'user' | 'ai'; text: string; tasks?: ClarifyTask[]; saved?: boolean };
+let _wid = 0;
 
 function parseDue(due: string): { date: string; time: string } {
   if (!due) return { date: '', time: '' };
@@ -110,6 +113,10 @@ export default function RecordSection() {
   const [result, setResult]             = useState<Result | null>(null);
   const [clarifyTasks, setClarifyTasks] = useState<ClarifyTask[]>([]);
   const [errorMsg, setErrorMsg]         = useState('');
+  const [inputTab, setInputTab]         = useState<InputTab>('voice');
+  const [chatMsgs, setChatMsgs]         = useState<ChatMsg[]>([{ id: 0, role: 'ai', text: 'Юу хийхийг тэмдэглэх вэ? Товч байдлаар бичнэ үү.' }]);
+  const [chatInput, setChatInput]       = useState('');
+  const [chatLoading, setChatLoading]   = useState(false);
 
   const [taskVoiceIdx, setTaskVoiceIdx]       = useState<number | null>(null);
   const [taskVoiceStatus, setTaskVoiceStatus] = useState<TaskVoiceStatus>('idle');
@@ -226,6 +233,39 @@ export default function RecordSection() {
     setClarifyTasks(prev => prev.map((t, idx) => idx === i ? { ...t, ...fields } : t));
   }
 
+  async function handleChatSend() {
+    const text = chatInput.trim();
+    if (!text || chatLoading) return;
+    setChatInput('');
+    setChatMsgs(prev => [...prev, { id: ++_wid, role: 'user', text }]);
+    setChatLoading(true);
+    try {
+      const processed = await processText(text);
+      const tasks: ClarifyTask[] = processed.tasks.map(t => {
+        const { date, time } = parseDue(t.due);
+        return { title: t.title, date, time, urgent: false, inputMode: 'pick', category: t.category || 'Бусад', recurring: t.recurring, recurConfirmed: t.recurring?.confirmed ? true : undefined };
+      });
+      const aiText = tasks.length > 0
+        ? `${tasks.length} даалгавар олдлоо. Хадгалах уу?`
+        : (processed.summary || 'Даалгавар олдсонгүй. Тодорхойлон дахин бичнэ үү.');
+      setChatMsgs(prev => [...prev, { id: ++_wid, role: 'ai', text: aiText, tasks: tasks.length ? tasks : undefined }]);
+    } catch {
+      setChatMsgs(prev => [...prev, { id: ++_wid, role: 'ai', text: 'Алдаа гарлаа. Дахин оролдоно уу.' }]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  async function handleChatSave(msgId: number, tasks: ClarifyTask[]) {
+    try {
+      await saveEntry({ text: '', tasks: tasks.flatMap(expandTask), events: [], summary: '' });
+      window.dispatchEvent(new CustomEvent('tasks-updated'));
+      setChatMsgs(prev => prev.map(m => m.id === msgId ? { ...m, saved: true } : m));
+    } catch {
+      // silent fail for now
+    }
+  }
+
   function reset() {
     setStatus('idle'); setTranscript(''); setResult(null); setErrorMsg(''); setClarifyTasks([]);
     setTaskVoiceIdx(null); setTaskVoiceStatus('idle');
@@ -233,10 +273,102 @@ export default function RecordSection() {
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm p-6">
-      <h2 className="font-bold text-gray-900 dark:text-white text-lg mb-5">Дуу бичих</h2>
+      <h2 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Бичих</h2>
+
+      {/* Tab switcher */}
+      {status === 'idle' && (
+        <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-slate-600 mb-5">
+          <button
+            onClick={() => setInputTab('voice')}
+            className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${inputTab === 'voice' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+          >
+            <Mic size={12} /> Дуу бичих
+          </button>
+          <button
+            onClick={() => setInputTab('chat')}
+            className={`flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border-l border-gray-200 dark:border-slate-600 ${inputTab === 'chat' ? 'bg-indigo-500 text-white' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
+          >
+            <Sparkles size={12} /> AI Чат
+          </button>
+        </div>
+      )}
+
+      {/* Chat mode */}
+      {inputTab === 'chat' && status === 'idle' && (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
+            {chatMsgs.slice(-12).map(msg => (
+              <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {msg.role === 'ai' ? (
+                  <div className="max-w-[85%] bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 rounded-2xl rounded-tl-sm px-4 py-3 flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <Sparkles size={10} className="text-indigo-500" />
+                      <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide">MonTask AI</span>
+                    </div>
+                    <p className="text-sm text-gray-800 dark:text-slate-100">{msg.text}</p>
+                    {msg.tasks && !msg.saved && (
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        {msg.tasks.map((t, ti) => (
+                          <div key={ti} className="flex items-start gap-2 pt-2 border-t border-indigo-100 dark:border-indigo-800">
+                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
+                            <div>
+                              <p className="text-xs font-semibold text-gray-800 dark:text-slate-100">{t.title}</p>
+                              {t.date && <p className="text-[11px] text-gray-400">{t.date}{t.time ? ` · ${t.time}` : ''}</p>}
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => handleChatSave(msg.id, msg.tasks!)}
+                          className="mt-1 self-start flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-lg transition-colors"
+                        >
+                          <CheckCircle2 size={12} /> Хадгалах
+                        </button>
+                      </div>
+                    )}
+                    {msg.saved && <p className="text-xs text-emerald-500 font-semibold mt-1 flex items-center gap-1"><CheckCircle2 size={11} /> Хадгалагдлаа</p>}
+                  </div>
+                ) : (
+                  <div className="max-w-[75%] bg-indigo-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+                    <p className="text-sm">{msg.text}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex justify-start">
+                <div className="bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-800 rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex gap-1 items-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="flex items-end gap-2 border border-gray-200 dark:border-slate-600 rounded-xl px-3 py-2">
+            <textarea
+              className="flex-1 text-sm text-gray-800 dark:text-slate-100 bg-transparent resize-none focus:outline-none placeholder:text-gray-400 dark:placeholder:text-slate-500 max-h-20"
+              placeholder="Даалгавраа бичнэ үү..."
+              rows={1}
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); }}}
+            />
+            <button
+              onClick={handleChatSend}
+              disabled={!chatInput.trim() || chatLoading}
+              className="w-8 h-8 rounded-full bg-indigo-500 hover:bg-indigo-600 disabled:bg-gray-200 dark:disabled:bg-slate-600 text-white flex items-center justify-center transition-colors shrink-0"
+            >
+              <Send size={14} />
+            </button>
+          </div>
+          <p className="text-[11px] text-gray-400 dark:text-slate-500 text-center">Enter дарж илгээнэ үү</p>
+        </div>
+      )}
 
       {/* Mic button */}
-      {(status === 'idle' || isRecording || isProcessing) && (
+      {inputTab === 'voice' && (status === 'idle' || isRecording || isProcessing) && (
         <div className="flex flex-col items-center gap-4 mb-5">
           <button
             onClick={isRecording ? stopRecording : startRecording}
