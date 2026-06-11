@@ -234,16 +234,18 @@ export default function LoginScreen() {
           </ScaleBtn>
         </Reanimated.View>
 
-        <Reanimated.View entering={FadeInDown.delay(420).springify()} style={s.emailBtnWrap}>
-          <ScaleBtn onPress={handleDemo}>
-            <View style={[s.demoBtn, { borderColor: C.btnBorder }]}>
-              {loading
-                ? <ActivityIndicator color={C.accent} size="small" />
-                : <Text style={[s.demoBtnText, { color: C.accent }]}>✦ Demo-оор үзэх</Text>
-              }
-            </View>
-          </ScaleBtn>
-        </Reanimated.View>
+        {process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && (
+          <Reanimated.View entering={FadeInDown.delay(420).springify()} style={s.emailBtnWrap}>
+            <ScaleBtn onPress={handleDemo}>
+              <View style={[s.demoBtn, { borderColor: C.btnBorder }]}>
+                {loading
+                  ? <ActivityIndicator color={C.accent} size="small" />
+                  : <Text style={[s.demoBtnText, { color: C.accent }]}>✦ Demo-оор үзэх</Text>
+                }
+              </View>
+            </ScaleBtn>
+          </Reanimated.View>
+        )}
 
         <Reanimated.View entering={FadeInDown.delay(440).springify()}>
           <Text style={[s.terms, { color: C.termsColor }]}>
