@@ -99,7 +99,7 @@ export async function searchUsers(username: string) {
 // ── Friends ──────────────────────────────────────────────────────────
 export type Friend = { uid: string; username: string };
 export type FriendRequest = { id: string; fromUid: string; username: string };
-export type DayAvailability = { taskCount: number; busyTimes: string[] };
+export type DayAvailability = { taskCount: number; busyTimes: string[]; sharedTasks?: string[] };
 
 export async function getFriends() {
   const { data } = await api.get('/api/friends', { headers: await authHeader() });
