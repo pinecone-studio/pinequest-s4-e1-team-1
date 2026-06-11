@@ -22,6 +22,7 @@ import HelpScreen from "./src/screens/HelpScreen";
 import PrivacySecurityScreen from "./src/screens/PrivacySecurityScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
 import { useTaskNotifications } from "./src/hooks/useTaskNotifications";
+import { useAppNotifications } from "./src/hooks/useAppNotifications";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -112,6 +113,7 @@ function App() {
 function AppTabs() {
   const { colors, isDark } = useTheme();
   useTaskNotifications();
+  useAppNotifications();
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <NavigationContainer>

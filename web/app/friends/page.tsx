@@ -370,20 +370,33 @@ export default function FriendsPage() {
                     {(() => {
                       const info = calendar[selectedDay];
                       const [, , d] = selectedDay.split('-');
-                      if (!info || info.taskCount === 0) {
-                        return <p className="text-sm text-gray-500 dark:text-slate-400">{d}-нд завтай байна</p>;
-                      }
                       return (
                         <div className="flex flex-col gap-2">
-                          <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">
-                            {d}-нд <span className="text-indigo-500">{info.taskCount} ажил</span> байна
-                          </p>
-                          {info.busyTimes.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {info.busyTimes.sort().map((t, i) => (
-                                <span key={i} className="text-xs bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full font-medium">
-                                  {t} завгүй
-                                </span>
+                          {(!info || info.taskCount === 0) ? (
+                            <p className="text-sm text-gray-500 dark:text-slate-400">{d}-нд завтай байна</p>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">
+                                {d}-нд <span className="text-indigo-500">{info.taskCount} ажил</span> байна
+                              </p>
+                              {info.busyTimes.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {info.busyTimes.sort().map((t, i) => (
+                                    <span key={i} className="text-xs bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full font-medium">
+                                      {t} завгүй
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {info?.sharedTasks && info.sharedTasks.length > 0 && (
+                            <div className="mt-1 pt-2 border-t border-gray-200 dark:border-slate-600 flex flex-col gap-1.5">
+                              <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide">Танд илгээсэн ажил</p>
+                              {info.sharedTasks.map((title, i) => (
+                                <div key={i} className="flex items-center gap-2 pl-2 border-l-2 border-indigo-400">
+                                  <span className="text-sm text-gray-700 dark:text-slate-200">{title}</span>
+                                </div>
                               ))}
                             </div>
                           )}

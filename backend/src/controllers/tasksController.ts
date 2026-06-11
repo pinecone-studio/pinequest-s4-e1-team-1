@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Task from '../models/Task';
 import FriendRequest from '../models/FriendRequest';
+import User from '../models/User';
+import Notification from '../models/Notification';
+import { sendExpoPush } from '../utils/pushNotification';
 
 const isDbReady = () => mongoose.connection.readyState === 1;
 
@@ -80,6 +83,15 @@ export const shareTask = async (req: Request, res: Response) => {
     if (!task) return res.status(404).json({ error: 'Task not found' });
 
     await Task.create({ uid: toUid, title: task.title, due: task.due, priority: task.priority, category: task.category, sharedBy: req.uid });
+
+    const sender = await User.findOne({ uid: req.uid });
+    const fromUsername = sender?.username ?? req.uid;
+    const recipient = await User.findOne({ uid: toUid });
+    await Notification.create({ uid: toUid, type: 'task_shared', fromUsername, taskTitle: task.title });
+    if (recipient?.expoPushToken) {
+      await sendExpoPush(recipient.expoPushToken, 'Шинэ ажил ирлээ', `${fromUsername}: "${task.title}"`);
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

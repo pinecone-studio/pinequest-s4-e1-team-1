@@ -122,7 +122,7 @@ export async function searchUsers(username: string) {
 // ── Friends ──────────────────────────────────────────────────────────
 export type Friend = { uid: string; username: string };
 export type FriendRequest = { id: string; fromUid: string; username: string };
-export type DayAvailability = { taskCount: number; busyTimes: string[] };
+export type DayAvailability = { taskCount: number; busyTimes: string[]; sharedTasks?: string[] };
 
 export async function getFriends() {
   const { data } = await api.get('/api/friends');
@@ -162,4 +162,21 @@ export async function getFriendCalendar(friendUid: string, month: string) {
 export async function shareTask(taskId: string, toUid: string) {
   const { data } = await api.post(`/api/tasks/${taskId}/share`, { toUid });
   return data as { success: boolean };
+}
+
+export type AppNotification = {
+  _id: string;
+  type: 'friend_request' | 'task_shared';
+  fromUsername: string;
+  taskTitle?: string;
+  createdAt: string;
+};
+
+export async function getNotifications() {
+  const { data } = await api.get('/api/notifications');
+  return data as AppNotification[];
+}
+
+export async function markNotificationsRead() {
+  await api.post('/api/notifications/read');
 }

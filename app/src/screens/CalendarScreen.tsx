@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   View,
@@ -9,10 +9,11 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
-import { fetchTasks, Task } from "../api";
+import { fetchTasks, getFriends, shareTask, Task, Friend } from "../api";
 import { useTheme } from "../theme/ThemeContext";
 import { Colors } from "../theme/colors";
 
@@ -257,6 +258,10 @@ export default function CalendarScreen() {
   const [selected, setSelected] = useState(todayStr());
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [shareModal, setShareModal] = useState(false);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -288,6 +293,25 @@ export default function CalendarScreen() {
         (order[b.priority ?? "medium"] ?? 1),
     );
   }, [byDate, selected]);
+
+  useEffect(() => {
+    if (!shareModal) return;
+    setLoadingFriends(true);
+    getFriends().then(setFriends).catch(() => {}).finally(() => setLoadingFriends(false));
+  }, [shareModal]);
+
+  const handleShare = async (friend: Friend) => {
+    setSharing(true);
+    try {
+      await Promise.all(selectedTasks.map(t => shareTask(t._id, friend.uid)));
+      setShareModal(false);
+      Alert.alert('Илгээсэн!', `${selectedTasks.length} даалгаврыг ${friend.username}-д илгээлээ`);
+    } catch {
+      Alert.alert('Алдаа', 'Илгээхэд алдаа гарлаа');
+    } finally {
+      setSharing(false);
+    }
+  };
 
   const prevMonth = () =>
     setMonth((m) => {
@@ -369,11 +393,57 @@ export default function CalendarScreen() {
             </Text>
           </View>
           {selectedTasks.length > 0 && (
-            <View style={[s.countBadge, { backgroundColor: C.accent }]}>
-              <Text style={s.countBadgeText}>{selectedTasks.length}</Text>
-            </View>
+            <TouchableOpacity
+              style={[s.shareBtn, { backgroundColor: C.accentLight }]}
+              onPress={() => setShareModal(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="share-social-outline" size={15} color={C.accent} />
+              <Text style={[s.shareBtnText, { color: C.accent }]}>Найздаа</Text>
+            </TouchableOpacity>
           )}
         </View>
+
+        <Modal visible={shareModal} transparent animationType="slide" onRequestClose={() => setShareModal(false)}>
+          <View style={s.modalOverlay}>
+            <View style={[s.modalSheet, { backgroundColor: C.surface }]}>
+              <View style={s.modalHeader}>
+                <Text style={[s.modalTitle, { color: C.text }]}>Найздаа илгээх</Text>
+                <TouchableOpacity onPress={() => setShareModal(false)}>
+                  <Ionicons name="close" size={22} color={C.textMuted} />
+                </TouchableOpacity>
+              </View>
+              <Text style={[s.modalSub, { color: C.textMuted }]}>
+                {formatLabel(selected)}-ийн {selectedTasks.length} даалгаврыг илгээх
+              </Text>
+              {loadingFriends ? (
+                <ActivityIndicator color={C.accent} style={{ marginVertical: 24 }} />
+              ) : friends.length === 0 ? (
+                <Text style={[s.modalEmpty, { color: C.textMuted }]}>Найз байхгүй байна</Text>
+              ) : (
+                <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                  {friends.map(f => (
+                    <TouchableOpacity
+                      key={f.uid}
+                      style={[s.friendRow, { borderColor: C.border }]}
+                      onPress={() => handleShare(f)}
+                      disabled={sharing}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[s.friendAvatar, { backgroundColor: C.accentLight }]}>
+                        <Text style={[s.friendAvatarText, { color: C.accent }]}>
+                          {f.username[0].toUpperCase()}
+                        </Text>
+                      </View>
+                      <Text style={[s.friendName, { color: C.text }]}>{f.username}</Text>
+                      {sharing && <ActivityIndicator size="small" color={C.accent} />}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+        </Modal>
 
         {selectedTasks.length === 0 ? (
           <View style={s.empty}>
@@ -448,4 +518,16 @@ const s = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 32, gap: 10 },
   emptyIconWrap: { width: 52, height: 52, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   emptyText: { fontSize: 15, fontWeight: "600" },
+  shareBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
+  shareBtnText: { fontSize: 13, fontWeight: "700" },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  modalTitle: { fontSize: 18, fontWeight: "800" },
+  modalSub: { fontSize: 13, marginBottom: 20 },
+  modalEmpty: { textAlign: "center", paddingVertical: 24, fontSize: 14 },
+  friendRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  friendAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
+  friendAvatarText: { fontSize: 15, fontWeight: "800" },
+  friendName: { flex: 1, fontSize: 15, fontWeight: "600" },
 });

@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import NavBar from './NavBar';
 import UsernameSetup from './UsernameSetup';
+import NotificationToast from './NotificationToast';
 
 const PUBLIC = ['/login', '/landing'];
 
@@ -34,6 +35,7 @@ export default function AuthWrapper({ children }: { children: React.ReactNode })
     <>
       {user && <NavBar />}
       {user && !isPublic && username === null && <UsernameSetup />}
+      {user && !isPublic && <NotificationToast />}
       <main className="flex-1 flex flex-col">{children}</main>
     </>
   );

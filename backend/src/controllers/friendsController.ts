@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import FriendRequest from '../models/FriendRequest';
 import User from '../models/User';
 import Task from '../models/Task';
+import Notification from '../models/Notification';
+import { sendExpoPush } from '../utils/pushNotification';
 
 // Send friend request by username
 export const sendRequest = async (req: Request, res: Response) => {
@@ -29,6 +31,14 @@ export const sendRequest = async (req: Request, res: Response) => {
     }
 
     await FriendRequest.create({ fromUid: req.uid, toUid: target.uid });
+
+    const sender = await User.findOne({ uid: req.uid });
+    const fromUsername = sender?.username ?? req.uid;
+    await Notification.create({ uid: target.uid, type: 'friend_request', fromUsername });
+    if (target.expoPushToken) {
+      await sendExpoPush(target.expoPushToken, 'Найзын хүсэлт', `${fromUsername} найзын хүсэлт илгээлээ`);
+    }
+
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

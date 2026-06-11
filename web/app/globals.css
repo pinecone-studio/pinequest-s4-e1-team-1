@@ -356,3 +356,9 @@ header nav a:hover::after {
 @media (hover: none) {
   .custom-cursor { display: none !important; }
 }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up { animation: slide-up 0.3s cubic-bezier(.22,1,.36,1); }

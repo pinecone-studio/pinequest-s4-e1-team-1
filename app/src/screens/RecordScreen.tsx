@@ -35,6 +35,13 @@ function parseDue(due: string): { date: string; time: string } {
   return { date: due, time: '' };
 }
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 const CHIMEGE_PRESET = {
   extension: '.wav', sampleRate: 16000, numberOfChannels: 1, bitRate: 256000,
   android: { outputFormat: 'mpeg4' as const, audioEncoder: 'aac' as const },
@@ -100,7 +107,7 @@ function expandTask(t: ClarifyTask): SaveableTask[] {
         const d = new Date(today);
         const until = (wd - today.getDay() + 7) % 7 || 7;
         d.setDate(today.getDate() + until);
-        return { ...base, due: mkDue(d.toISOString().split('T')[0]) };
+        return { ...base, due: mkDue(localDateStr(d)) };
       });
     }
     return [{ ...base, due: t.date ? mkDue(t.date) : '' }];
@@ -111,14 +118,14 @@ function expandTask(t: ClarifyTask): SaveableTask[] {
     for (let i = 1; i <= 30; i++) {
       const d = new Date(today); d.setDate(today.getDate() + i);
       if (t.recurring.days.includes(d.getDay()))
-        results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+        results.push({ ...base, due: mkDue(localDateStr(d)) });
     }
   } else {
     for (let m = 0; m < 12; m++) {
       for (const day of t.recurring.days) {
         const d = new Date(today.getFullYear(), today.getMonth() + m, day);
         if (d >= today && d.getDate() === day)
-          results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+          results.push({ ...base, due: mkDue(localDateStr(d)) });
       }
     }
   }
@@ -363,10 +370,14 @@ export default function RecordScreen() {
         const { date, time } = parseDue(t.due);
         return { title: t.title, date, time, urgent: false, inputMode: 'pick', category: t.category || 'Бусад', recurring: t.recurring, recurConfirmed: t.recurring?.confirmed ? true : undefined };
       });
-      const aiText = tasks.length > 0
-        ? `${tasks.length} даалгавар олдлоо. Хадгалах уу?`
-        : (processed.summary || 'Даалгавар олдсонгүй. Тодорхойлон дахин хэлнэ үү.');
-      setChatMsgs(prev => [...prev, { id: ++_msgId, role: 'ai', text: aiText, tasks: tasks.length ? tasks : undefined }]);
+      if (tasks.length > 0) {
+        setResult(processed);
+        setTranscribed(text);
+        setClarifyTasks(tasks);
+        setPhase('clarifying');
+      } else {
+        setChatMsgs(prev => [...prev, { id: ++_msgId, role: 'ai', text: processed.summary || 'Даалгавар олдсонгүй. Тодорхойлон дахин хэлнэ үү.' }]);
+      }
     } catch {
       setChatMsgs(prev => [...prev, { id: ++_msgId, role: 'ai', text: 'Алдаа гарлаа. Дахин оролдоно уу.' }]);
     } finally {
