@@ -12,7 +12,7 @@ let mockIdCounter = 1;
 export const getTasks = async (req: Request, res: Response) => {
   try {
     if (!isDbReady()) return res.json(mockTasks.filter((t) => t.uid === req.uid).reverse());
-    const tasks = await Task.find({ uid: req.uid }).sort({ _id: -1 });
+    const tasks = await Task.find({ uid: req.uid, sharedBy: null }).sort({ _id: -1 });
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
@@ -79,7 +79,7 @@ export const shareTask = async (req: Request, res: Response) => {
     const task = await Task.findOne({ _id: req.params.id, uid: req.uid });
     if (!task) return res.status(404).json({ error: 'Task not found' });
 
-    await Task.create({ uid: toUid, title: task.title, due: task.due, priority: task.priority, category: task.category });
+    await Task.create({ uid: toUid, title: task.title, due: task.due, priority: task.priority, category: task.category, sharedBy: req.uid });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });

@@ -8,6 +8,7 @@ export interface ITaskDoc extends Document {
   priority: 'high' | 'medium' | 'low';
   category: string;
   entryId?: Types.ObjectId;
+  sharedBy?: string;
 }
 
 const TaskSchema = new Schema<ITaskDoc>({
@@ -18,6 +19,7 @@ const TaskSchema = new Schema<ITaskDoc>({
   priority: { type: String, enum: ['high', 'medium', 'low'], default: 'medium' },
   category: { type: String, default: '' },
   entryId: { type: Schema.Types.ObjectId, ref: 'Entry', required: false },
+  sharedBy: { type: String, default: null },
 });
 
 export default model<ITaskDoc>('Task', TaskSchema);

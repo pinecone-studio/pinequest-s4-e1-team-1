@@ -425,6 +425,16 @@ export default function FriendsScreen() {
                               )}
                             </>
                           )}
+                          {info?.sharedTasks && info.sharedTasks.length > 0 && (
+                            <View style={s.sharedSection}>
+                              <Text style={[s.sharedLabel, { color: C.textMuted }]}>Танд илгээсэн ажил:</Text>
+                              {info.sharedTasks.map((title, i) => (
+                                <View key={i} style={[s.sharedRow, { borderLeftColor: C.accent }]}>
+                                  <Text style={[s.sharedTitle, { color: C.text }]}>{title}</Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
                         </View>
                       );
                     })()}
@@ -550,6 +560,10 @@ const s = StyleSheet.create({
   busyDot: { width: 5, height: 5, borderRadius: 2.5, position: 'absolute', bottom: 3 },
   dayDetail: { borderRadius: 14, padding: 14, marginTop: 10 },
   dayDetailText: { fontSize: 14, fontWeight: '600' },
+  sharedSection: { marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.08)' },
+  sharedLabel: { fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sharedRow: { borderLeftWidth: 3, paddingLeft: 8, paddingVertical: 3, marginBottom: 4 },
+  sharedTitle: { fontSize: 13, fontWeight: '500' },
   busyTimes: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   timePill: { backgroundColor: '#fee2e2', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20 },
   timePillText: { color: '#ef4444', fontSize: 12, fontWeight: '500' },

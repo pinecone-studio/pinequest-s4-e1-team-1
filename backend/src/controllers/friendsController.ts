@@ -127,21 +127,33 @@ export const getFriendCalendar = async (req: Request, res: Response) => {
     });
     if (!friendship) return res.status(403).json({ error: 'Найзууд биш байна' });
 
-    const filter: Record<string, unknown> = { uid: friendUid };
-    if (month) filter.due = { $regex: `^${month}` };
+    const friendFilter: Record<string, unknown> = { uid: friendUid, sharedBy: null };
+    if (month) friendFilter.due = { $regex: `^${month}` };
 
-    const tasks = await Task.find(filter).select('due status');
+    const sharedFilter: Record<string, unknown> = { uid: req.uid, sharedBy: friendUid };
+    if (month) sharedFilter.due = { $regex: `^${month}` };
 
-    const calendar: Record<string, { taskCount: number; busyTimes: string[] }> = {};
+    const [tasks, sharedTasks] = await Promise.all([
+      Task.find(friendFilter).select('due status'),
+      Task.find(sharedFilter).select('due title'),
+    ]);
+
+    const calendar: Record<string, { taskCount: number; busyTimes: string[]; sharedTasks: string[] }> = {};
     for (const task of tasks) {
       if (!task.due) continue;
       const dateKey = task.due.slice(0, 10);
-      if (!calendar[dateKey]) calendar[dateKey] = { taskCount: 0, busyTimes: [] };
+      if (!calendar[dateKey]) calendar[dateKey] = { taskCount: 0, busyTimes: [], sharedTasks: [] };
       calendar[dateKey].taskCount++;
       if (task.due.includes('T')) {
         const time = task.due.slice(11, 16);
         if (time) calendar[dateKey].busyTimes.push(time);
       }
+    }
+    for (const task of sharedTasks) {
+      if (!task.due) continue;
+      const dateKey = task.due.slice(0, 10);
+      if (!calendar[dateKey]) calendar[dateKey] = { taskCount: 0, busyTimes: [], sharedTasks: [] };
+      calendar[dateKey].sharedTasks.push(task.title);
     }
 
     res.json(calendar);
