@@ -90,6 +90,10 @@ export default function LoginPage() {
 
   const handleDemo = async () => {
     setError("");
+    setMode("login");
+    setEmail("demo@montask.mn");
+    setPassword("Demo1234!");
+    await new Promise(r => setTimeout(r, 400));
     setLoading(true);
     try {
       await loginWithEmail("demo@montask.mn", "Demo1234!");

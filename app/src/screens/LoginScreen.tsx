@@ -158,6 +158,11 @@ export default function LoginScreen() {
   const openModal = () => { setMode('login'); setEmailModal(true); };
 
   const handleDemo = async () => {
+    setEmail('demo@montask.mn');
+    setPassword('Demo1234!');
+    setMode('login');
+    setEmailModal(true);
+    await new Promise(r => setTimeout(r, 500));
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, 'demo@montask.mn', 'Demo1234!');
