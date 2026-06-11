@@ -433,47 +433,8 @@ export default function RecordScreen() {
             <Text style={[s.subtitle, { color: C.textSec }]}>{formatDate()}</Text>
           </View>
 
-          {/* Mode tab switcher — hidden during clarify/saving/done */}
-          {showModeTabs && (
-            <View style={[s.tabWrap, {
-              backgroundColor: isDark ? C.surfaceAlt : '#EEF2FF',
-              borderColor: isDark ? C.border : C.accentMid,
-            }]}>
-              <Animated.View
-                style={[s.tabIndicator, {
-                  backgroundColor: isDark ? C.surface : '#fff',
-                  left: tabIndicatorLeft,
-                  shadowColor: C.accent,
-                }]}
-              />
-              <TouchableOpacity
-                style={s.tabBtn}
-                onPress={() => { setMode('voice'); }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="mic" size={16} color={mode === 'voice' ? C.accent : C.textMuted} />
-                <Text style={[s.tabLabel, { color: mode === 'voice' ? C.accent : C.textMuted, fontWeight: mode === 'voice' ? '700' : '500' }]}>
-                  Хоолой
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.tabBtn}
-                onPress={() => {
-                  if (state.isRecording) { recorder.stop().catch(() => {}); setPhase('idle'); }
-                  setMode('text');
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color={mode === 'text' ? C.accent : C.textMuted} />
-                <Text style={[s.tabLabel, { color: mode === 'text' ? C.accent : C.textMuted, fontWeight: mode === 'text' ? '700' : '500' }]}>
-                  AI Чат
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
           {/* VOICE MODE */}
-          {mode === 'voice' && showModeTabs && (
+          {showModeTabs && (
             <View style={s.stage}>
               <View style={s.micContainer}>
                 <View style={[s.ambientGlow, { backgroundColor: isRecording ? '#ef444418' : C.accentLight }]} />
@@ -539,83 +500,6 @@ export default function RecordScreen() {
             </View>
           )}
 
-          {/* CHAT MODE */}
-          {mode === 'text' && showModeTabs && (
-            <View style={s.chatWrap}>
-              {chatMsgs.slice(-10).map(msg => (
-                <View key={msg.id} style={[s.chatRow, msg.role === 'user' ? s.chatRowRight : s.chatRowLeft]}>
-                  {msg.role === 'ai' ? (
-                    <View style={[s.aiBubble, { backgroundColor: C.accentLight }]}>
-                      <View style={s.aiBubbleHeader}>
-                        <Ionicons name="sparkles" size={11} color={C.accent} />
-                        <Text style={[s.aiBubbleLabel, { color: C.accent }]}>MonTask AI</Text>
-                      </View>
-                      <Text style={[s.aiBubbleText, { color: C.text }]}>{msg.text}</Text>
-                      {msg.tasks && !msg.saved && (
-                        <>
-                          {msg.tasks.map((t, ti) => (
-                            <View key={ti} style={[s.chatTaskRow, { borderColor: C.accentMid }]}>
-                              <View style={[s.chatTaskDot, { backgroundColor: C.accent }]} />
-                              <View style={{ flex: 1 }}>
-                                <Text style={[s.chatTaskTitle, { color: C.text }]}>{t.title}</Text>
-                                {!!t.date && <Text style={[s.chatTaskDue, { color: C.textMuted }]}>{t.date}{t.time ? ` · ${t.time}` : ''}</Text>}
-                              </View>
-                            </View>
-                          ))}
-                          <TouchableOpacity
-                            style={[s.chatSaveBtn, { backgroundColor: C.accent }]}
-                            onPress={() => handleChatSave(msg.id, msg.tasks!)}
-                          >
-                            <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                            <Text style={s.chatSaveBtnText}>Хадгалах</Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                      {msg.saved && (
-                        <View style={s.chatSavedRow}>
-                          <Ionicons name="checkmark-circle" size={13} color="#10b981" />
-                          <Text style={[s.chatSavedText]}>Хадгалагдлаа ✓</Text>
-                        </View>
-                      )}
-                    </View>
-                  ) : (
-                    <View style={[s.userBubble, { backgroundColor: C.accent }]}>
-                      <Text style={s.userBubbleText}>{msg.text}</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-              {chatLoading && (
-                <View style={s.chatRowLeft}>
-                  <View style={[s.aiBubble, { backgroundColor: C.accentLight, paddingVertical: 14 }]}>
-                    <ActivityIndicator size="small" color={C.accent} />
-                  </View>
-                </View>
-              )}
-
-              <View style={[s.chatInputRow, { backgroundColor: C.surface, borderColor: isDark ? C.border : '#D1D5DB' }]}>
-                <TextInput
-                  style={[s.chatInput, { color: C.text }]}
-                  placeholder="Даалгавраа бичнэ үү..."
-                  placeholderTextColor={C.textMuted}
-                  value={chatInput}
-                  onChangeText={setChatInput}
-                  multiline
-                  returnKeyType="send"
-                  blurOnSubmit
-                  onSubmitEditing={handleChatSend}
-                />
-                <TouchableOpacity
-                  style={[s.chatSendBtn, { backgroundColor: chatInput.trim() && !chatLoading ? C.accent : C.border }]}
-                  onPress={handleChatSend}
-                  disabled={!chatInput.trim() || chatLoading}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="send" size={15} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
 
           {/* Transcript card */}
           {!!transcribed && phase !== 'idle' && (
