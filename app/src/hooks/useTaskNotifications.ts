@@ -3,12 +3,16 @@ import * as Notifications from 'expo-notifications';
 import { fetchTasks } from '../api';
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async (notification) => {
+    // Only show banner for local notifications; suppress foreground push to avoid duplicates
+    const isLocal = notification.request.content.data?.local === true;
+    return {
+      shouldShowBanner: isLocal,
+      shouldShowList: isLocal,
+      shouldPlaySound: isLocal,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 function getThresholdMinutes(priority: string): number {
@@ -58,6 +62,7 @@ export function useTaskNotifications() {
                 content: {
                   title: `⏰ ${t.title}`,
                   body: formatTimeLeft(minutesLeft),
+                  data: { local: true },
                 },
                 trigger: null,
               });

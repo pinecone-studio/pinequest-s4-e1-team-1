@@ -77,6 +77,27 @@ export async function deleteUserData() {
   await api.delete('/api/user', { headers: await authHeader() });
 }
 
+export async function savePushToken(token: string) {
+  await api.post('/api/notifications/token', { token }, { headers: await authHeader() });
+}
+
+export type AppNotification = {
+  _id: string;
+  type: 'friend_request' | 'task_shared';
+  fromUsername: string;
+  taskTitle?: string;
+  createdAt: string;
+};
+
+export async function getNotifications() {
+  const { data } = await api.get('/api/notifications', { headers: await authHeader() });
+  return data as AppNotification[];
+}
+
+export async function markNotificationsRead() {
+  await api.post('/api/notifications/read', {}, { headers: await authHeader() });
+}
+
 export type ReportPeriod = 'day' | 'week' | 'month';
 export type ReportType = 'general' | 'work';
 

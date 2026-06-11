@@ -12,6 +12,7 @@ import reportRouter from './routes/report';
 import userRouter from './routes/user';
 import parseDatetimeRouter from './routes/parse-datetime';
 import friendsRouter from './routes/friends';
+import notificationsRouter from './routes/notifications';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -31,6 +32,7 @@ app.use('/api/report', reportRouter);
 app.use('/api/user', userRouter);
 app.use('/api/parse-datetime', parseDatetimeRouter);
 app.use('/api/friends', friendsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
