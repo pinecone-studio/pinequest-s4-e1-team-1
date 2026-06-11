@@ -6,6 +6,9 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,8 +19,11 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  shareTask,
+  getFriends,
   Task,
   TaskPriority,
+  Friend,
 } from "../api";
 import FocusCard from "../components/FocusCard";
 import TabFilter from "../components/TabFilter";
@@ -90,6 +96,9 @@ export default function TasksScreen() {
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATS);
   const [addModal, setAddModal] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
+  const [shareTarget, setShareTarget] = useState<Task | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(CATS_KEY).then((v) => {
@@ -183,6 +192,29 @@ export default function TasksScreen() {
     setAddModal(false);
   };
 
+  const handleShareOpen = async (task: Task) => {
+    setShareTarget(task);
+    setFriendsLoading(true);
+    try {
+      setFriends(await getFriends());
+    } catch {
+      setFriends([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
+  const handleShareTo = async (friend: Friend) => {
+    if (!shareTarget) return;
+    try {
+      await shareTask(shareTarget._id, friend.uid);
+      setShareTarget(null);
+      Alert.alert('Амжилттай', `"${shareTarget.title}" даалгаврыг ${friend.username}-д илгээлээ`);
+    } catch (e: any) {
+      Alert.alert('Алдаа', e?.response?.data?.error ?? e.message);
+    }
+  };
+
   const handleUpdate = async (
     title: string,
     due: string,
@@ -236,6 +268,7 @@ export default function TasksScreen() {
           onToggle={toggleComplete}
           onDelete={confirmDelete}
           onEdit={setEditTask}
+          onShare={handleShareOpen}
         />
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -261,6 +294,32 @@ export default function TasksScreen() {
         onClose={() => setEditTask(null)}
         onSave={handleUpdate}
       />
+
+      <Modal visible={!!shareTarget} transparent animationType="slide" onRequestClose={() => setShareTarget(null)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setShareTarget(null)} />
+        <View style={[s.shareSheet, { backgroundColor: C.surface }]}>
+          <Text style={[s.shareTitle, { color: C.text }]}>Найздаа илгээх</Text>
+          <Text style={[s.shareSubtitle, { color: C.textMuted }]} numberOfLines={1}>"{shareTarget?.title}"</Text>
+          {friendsLoading ? (
+            <ActivityIndicator color={C.accent} style={{ marginTop: 24 }} />
+          ) : friends.length === 0 ? (
+            <Text style={[s.noFriends, { color: C.textMuted }]}>Найз байхгүй байна</Text>
+          ) : (
+            <FlatList
+              data={friends}
+              keyExtractor={f => f.uid}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={[s.friendRow, { borderBottomColor: C.border }]} onPress={() => handleShareTo(item)}>
+                  <View style={[s.avatar, { backgroundColor: C.accentLight }]}>
+                    <Text style={[s.avatarText, { color: C.accent }]}>{item.username[0].toUpperCase()}</Text>
+                  </View>
+                  <Text style={[s.friendName, { color: C.text }]}>{item.username}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -293,4 +352,18 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   fabText: { color: "#fff", fontSize: 28, lineHeight: 32 },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  shareSheet: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40,
+    maxHeight: '60%',
+  },
+  shareTitle: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  shareSubtitle: { fontSize: 13, marginBottom: 16 },
+  noFriends: { textAlign: 'center', marginTop: 24, fontSize: 14 },
+  friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 16, fontWeight: '700' },
+  friendName: { fontSize: 15, fontWeight: '500' },
 });

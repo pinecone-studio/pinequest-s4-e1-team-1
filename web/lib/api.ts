@@ -158,3 +158,8 @@ export async function getFriendCalendar(friendUid: string, month: string) {
   const { data } = await api.get(`/api/friends/${friendUid}/calendar`, { params: { month } });
   return data as Record<string, DayAvailability>;
 }
+
+export async function shareTask(taskId: string, toUid: string) {
+  const { data } = await api.post(`/api/tasks/${taskId}/share`, { toUid });
+  return data as { success: boolean };
+}

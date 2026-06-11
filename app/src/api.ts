@@ -59,13 +59,18 @@ export async function createTask(title: string, due = '', priority: TaskPriority
   return data as Task;
 }
 
-export async function updateTask(id: string, fields: { status?: 'pending' | 'done'; priority?: TaskPriority; category?: string }) {
+export async function updateTask(id: string, fields: { status?: 'pending' | 'done'; priority?: TaskPriority; category?: string; title?: string; due?: string }) {
   const { data } = await api.patch(`/api/tasks/${id}`, fields, { headers: await authHeader() });
   return data as Task;
 }
 
 export async function deleteTask(id: string) {
   await api.delete(`/api/tasks/${id}`, { headers: await authHeader() });
+}
+
+export async function shareTask(taskId: string, toUid: string) {
+  const { data } = await api.post(`/api/tasks/${taskId}/share`, { toUid }, { headers: await authHeader() });
+  return data as { success: boolean };
 }
 
 export async function deleteUserData() {

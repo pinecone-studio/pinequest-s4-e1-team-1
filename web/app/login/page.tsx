@@ -8,7 +8,7 @@ import Link from "next/link";
 
 type Mode = "login" | "signup" | "forgot";
 
-function MagButton({ children, onClick, disabled, className }: any) {
+function MagButton({ children, onClick, disabled, className, style, type }: any) {
   const ref = useRef<HTMLButtonElement>(null);
 
   const onMove = (e: React.MouseEvent) => {
@@ -31,11 +31,13 @@ function MagButton({ children, onClick, disabled, className }: any) {
   return (
     <button
       ref={ref}
+      type={type}
       onClick={onClick}
       disabled={disabled}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       className={className}
+      style={style}
     >
       {children}
     </button>
@@ -179,7 +181,7 @@ export default function LoginPage() {
         <div className="w-16" />
       </div>
 
-      <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-8">
+      <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-24">
         <div className="w-full max-w-md">
           <div
             className="text-center mb-10"

@@ -10,9 +10,9 @@ import {
 } from "./taskConstants";
 import { useTheme } from "../theme/ThemeContext";
 
-type Props = { task: Task; onToggle: () => void; onDelete: () => void; onEdit?: () => void };
+type Props = { task: Task; onToggle: () => void; onDelete: () => void; onEdit?: () => void; onShare?: () => void };
 
-export default function TaskCard({ task, onToggle, onDelete, onEdit }: Props) {
+export default function TaskCard({ task, onToggle, onDelete, onEdit, onShare }: Props) {
   const { colors: C } = useTheme();
   const done = task.status === "done";
   const pColor = PRIO_COLOR[task.priority ?? "medium"];
@@ -59,11 +59,14 @@ export default function TaskCard({ task, onToggle, onDelete, onEdit }: Props) {
       </View>
 
       <View style={s.actions}>
+        <TouchableOpacity style={s.actionBtn} onPress={onShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="person-add-outline" size={15} color={C.accent} />
+        </TouchableOpacity>
         <TouchableOpacity style={s.actionBtn} onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="pencil-outline" size={16} color={C.textMuted} />
+          <Ionicons name="pencil-outline" size={15} color={C.textMuted} />
         </TouchableOpacity>
         <TouchableOpacity style={s.actionBtn} onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="trash-outline" size={16} color="#f43f5e" />
+          <Ionicons name="trash-outline" size={15} color="#f43f5e" />
         </TouchableOpacity>
       </View>
     </View>

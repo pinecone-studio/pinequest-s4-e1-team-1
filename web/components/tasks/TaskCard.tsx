@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { CheckCircle2, Circle, Clock, Flag, Pencil, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Flag, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { BackendTask } from '@/lib/api';
 
 const priorityConfig: Record<string, { label: string; className: string }> = {
@@ -31,11 +31,12 @@ function formatDue(due: string) {
 
 type EditField = 'priority' | 'due' | 'category' | null;
 
-export default function TaskCard({ task, onToggle, onUpdate, onDelete }: {
+export default function TaskCard({ task, onToggle, onUpdate, onDelete, onShare }: {
   task: BackendTask;
   onToggle: (id: string, done: boolean) => void;
   onUpdate: (id: string, fields: Partial<Pick<BackendTask, 'priority' | 'due' | 'category'>> & { title?: string }) => void;
   onDelete: (id: string) => void;
+  onShare?: (task: BackendTask) => void;
 }) {
   const [editing, setEditing]           = useState<EditField>(null);
   const [dueVal, setDueVal]             = useState(task.due?.slice(0, 16) || '');
@@ -159,8 +160,14 @@ export default function TaskCard({ task, onToggle, onUpdate, onDelete }: {
         )}
       </div>
 
-      {/* Edit + Delete */}
+      {/* Share + Edit + Delete */}
       <div className="flex flex-row gap-0.5 shrink-0 mt-0.5">
+        {onShare && (
+          <button onClick={() => onShare(task)}
+            className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
+            <UserPlus size={14} />
+          </button>
+        )}
         <button onClick={startTitleEdit}
           className="p-1 rounded-lg text-gray-300 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors">
           <Pencil size={14} />
