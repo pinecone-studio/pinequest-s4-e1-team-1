@@ -7,6 +7,23 @@ import Task from '../models/Task';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const isDbReady = () => mongoose.connection.readyState === 1;
 
+type WorkloadSignal = 'overload' | 'ok' | 'underload';
+
+function getWorkloadSignal(taskCount: number, period: string): { workloadSignal: WorkloadSignal; workloadAdvice: string } {
+  const [overloadAt, okAt] =
+    period === 'day'   ? [8, 3]  :
+    period === 'week'  ? [40, 14] :
+                         [150, 45];
+
+  if (taskCount >= overloadAt) {
+    return { workloadSignal: 'overload', workloadAdvice: 'Хэт их ачаалалтай байна — burnout болох эрсдэлтэй. Нэн чухал зүйлдээ анхаараарай.' };
+  } else if (taskCount >= okAt) {
+    return { workloadSignal: 'ok', workloadAdvice: 'Маш сайн байлаа! Ачаалал тэнцвэртэй байна.' };
+  } else {
+    return { workloadSignal: 'underload', workloadAdvice: 'Даалгавар бага байна. Шинэ зорилго нэмж идэвхжүүлж болно.' };
+  }
+}
+
 function getDateRange(period: string, date: string) {
   const base = new Date(date);
   base.setHours(23, 59, 59, 999);
@@ -96,7 +113,7 @@ export const getReport = async (req: Request, res: Response) => {
     const minId = objectIdFromDate(start);
     const maxId = objectIdFromDate(end);
 
-    const empty = { period, type, label, startDate: start.toISOString().split('T')[0], endDate: date, entryCount: 0, taskCount: 0, completedTaskCount: 0, pendingTaskCount: 0, highCount: 0, mediumCount: 0, lowCount: 0, eventCount: 0, summary: '', executiveSummary: '', insights: '', risks: '', recommendations: '' };
+    const empty = { period, type, label, startDate: start.toISOString().split('T')[0], endDate: date, entryCount: 0, taskCount: 0, completedTaskCount: 0, pendingTaskCount: 0, highCount: 0, mediumCount: 0, lowCount: 0, eventCount: 0, summary: '', executiveSummary: '', insights: '', risks: '', recommendations: '', workloadSignal: 'underload' as WorkloadSignal, workloadAdvice: 'Даалгавар бага байна. Шинэ зорилго нэмж идэвхжүүлж болно.' };
 
     if (!isDbReady()) return res.json(empty);
 
@@ -119,6 +136,7 @@ export const getReport = async (req: Request, res: Response) => {
     const eventCount         = entries.reduce((acc, e) => acc + e.events.length, 0);
     const periodLabel        = period === 'day' ? 'өнөөдөр' : period === 'week' ? 'энэ 7 хоногт' : 'энэ сард';
 
+    const { workloadSignal, workloadAdvice } = getWorkloadSignal(taskCount, period);
     let summary = '', executiveSummary = '', insights = '', risks = '', recommendations = '';
 
     if (isWork && relevant.length > 0) {
@@ -141,7 +159,7 @@ export const getReport = async (req: Request, res: Response) => {
       );
     }
 
-    res.json({ period, type, label, startDate: start.toISOString().split('T')[0], endDate: date, entryCount: entries.length, taskCount, completedTaskCount, pendingTaskCount, highCount, mediumCount, lowCount, eventCount, summary, executiveSummary, insights, risks, recommendations });
+    res.json({ period, type, label, startDate: start.toISOString().split('T')[0], endDate: date, entryCount: entries.length, taskCount, completedTaskCount, pendingTaskCount, highCount, mediumCount, lowCount, eventCount, summary, executiveSummary, insights, risks, recommendations, workloadSignal, workloadAdvice });
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

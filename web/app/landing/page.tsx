@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Mic,
   Sparkles,
@@ -15,7 +16,6 @@ import {
   Shield,
   Star,
   ChevronRight,
-  Activity,
   Rocket,
   Eye,
   Sun,
@@ -712,14 +712,7 @@ export default function LandingPage() {
             href="#"
             className="flex items-center gap-2 shrink-0 group/logo"
           >
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300"
-              style={{
-                background: "linear-gradient(135deg,#7c3aed,#db2777)",
-              }}
-            >
-              <Activity size={16} color="white" />
-            </div>
+            <Image src="/logo.png" alt="MonTask" width={32} height={32} className="rounded-lg shrink-0 transition-all duration-300" />
             <span className="font-black text-[16px] tracking-tight text-white hidden sm:inline">
               MonTask
             </span>
@@ -1171,12 +1164,7 @@ export default function LandingPage() {
       {/* ── Footer ────────────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-white/4 px-8 py-7 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div
-            className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
-          >
-            <Activity size={11} color="white" />
-          </div>
+          <Image src="/logo.png" alt="MonTask" width={24} height={24} className="rounded-lg shrink-0" />
           <span className="text-[13px] font-black text-white/38">MonTask</span>
         </div>
         <p className="text-[11px] text-white/18">

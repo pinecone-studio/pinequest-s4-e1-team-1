@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Mic, Square, CheckCircle2, Calendar, Clock, Flame } from 'lucide-react';
-import { transcribeAudio, processText, saveEntry, parseDatetime } from '@/lib/api';
+import { Mic, Square, CheckCircle2, Calendar, Clock, Flame, RefreshCw } from 'lucide-react';
+import { transcribeAudio, processText, saveEntry, parseDatetime, RecurringPattern } from '@/lib/api';
 
 type Result = {
   tasks:  { title: string; due: string }[];
@@ -13,13 +13,85 @@ type Result = {
 type InputMode = 'pick' | 'voice';
 type TaskVoiceStatus = 'idle' | 'recording' | 'processing';
 
+const CATEGORIES = ['Ажил', 'Хувийн', 'Эрүүл мэнд', 'Гэр бүл', 'Сурлага', 'Хобби', 'Бусад'];
+
 type ClarifyTask = {
   title: string;
   date: string;
   time: string;
   urgent: boolean;
   inputMode: InputMode;
+  category: string;
+  recurring?: RecurringPattern;
+  recurConfirmed?: boolean;
 };
+
+const WEEKDAY_NAMES = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+
+function recurringLabel(r: RecurringPattern): string {
+  if (r.type === 'weekly_days') {
+    return `7 хоног бүр · ${r.days.map(d => WEEKDAY_NAMES[d]).join(', ')}`;
+  }
+  return `Сар бүр · ${r.days.join(', ')}-нд`;
+}
+
+function countInstances(r: RecurringPattern): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let n = 0;
+  if (r.type === 'weekly_days') {
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      if (r.days.includes(d.getDay())) n++;
+    }
+  } else {
+    for (let m = 0; m < 12; m++) {
+      for (const day of r.days) {
+        const d = new Date(today.getFullYear(), today.getMonth() + m, day);
+        if (d >= today && d.getDate() === day) n++;
+      }
+    }
+  }
+  return n;
+}
+
+type SaveableTask = { title: string; due: string; priority: string; category: string };
+
+function expandTask(t: ClarifyTask): SaveableTask[] {
+  const base = { title: t.title, priority: t.urgent ? 'high' : 'medium', category: t.category };
+  const mkDue = (dateStr: string) => t.time ? `${dateStr}T${t.time}:00` : dateStr;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  if (!t.recurring || t.recurConfirmed === false) {
+    // Not recurring or user declined: one task per weekday (next occurrence each)
+    if (t.recurring?.type === 'weekly_days' && t.recurConfirmed === false) {
+      return t.recurring.days.map(wd => {
+        const d = new Date(today);
+        const until = (wd - today.getDay() + 7) % 7 || 7;
+        d.setDate(today.getDate() + until);
+        return { ...base, due: mkDue(d.toISOString().split('T')[0]) };
+      });
+    }
+    return [{ ...base, due: t.date ? mkDue(t.date) : '' }];
+  }
+
+  const results: SaveableTask[] = [];
+  if (t.recurring.type === 'weekly_days') {
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      if (t.recurring.days.includes(d.getDay()))
+        results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+    }
+  } else {
+    for (let m = 0; m < 12; m++) {
+      for (const day of t.recurring.days) {
+        const d = new Date(today.getFullYear(), today.getMonth() + m, day);
+        if (d >= today && d.getDate() === day)
+          results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+      }
+    }
+  }
+  return results.length ? results : [{ ...base, due: '' }];
+}
 
 type Status = 'idle' | 'recording' | 'processing' | 'clarifying' | 'saving' | 'done' | 'error';
 
@@ -82,7 +154,7 @@ export default function RecordSection() {
       if (processed.tasks.length > 0) {
         setClarifyTasks(processed.tasks.map(t => {
           const { date, time } = parseDue(t.due);
-          return { title: t.title, date, time, urgent: false, inputMode: date ? 'pick' : 'voice' };
+          return { title: t.title, date, time, urgent: false, inputMode: date ? 'pick' : 'voice', category: t.category || 'Бусад', recurring: t.recurring, recurConfirmed: t.recurring?.confirmed === true ? true : undefined };
         }));
         setStatus('clarifying');
       } else {
@@ -140,11 +212,7 @@ export default function RecordSection() {
     if (!result) return;
     setStatus('saving');
     try {
-      const updatedTasks = clarifyTasks.map(t => ({
-        title: t.title,
-        due: t.date ? (t.time ? `${t.date}T${t.time}:00` : t.date) : '',
-        priority: t.urgent ? 'high' : 'medium',
-      }));
+      const updatedTasks = clarifyTasks.flatMap(expandTask);
       await saveEntry({ text: transcript, tasks: updatedTasks, events: result.events, summary: result.summary });
       window.dispatchEvent(new CustomEvent('tasks-updated'));
       setStatus('done');
@@ -230,11 +298,40 @@ export default function RecordSection() {
                   <span className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 text-xs flex items-center justify-center font-bold shrink-0 mt-0.5">
                     {i + 1}
                   </span>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{task.title}</p>
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <p className="text-sm font-semibold text-gray-800 dark:text-slate-100">{task.title}</p>
+                    {task.recurring && task.recurConfirmed === undefined && (
+                      <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2 text-xs">
+                        <RefreshCw size={11} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                        <span className="text-amber-700 dark:text-amber-300 font-medium flex-1">7 хоног бүр давтагдах уу?</span>
+                        <button onClick={() => updateTask(i, { recurConfirmed: true })} className="px-2.5 py-1 rounded-lg bg-violet-600 text-white font-semibold hover:bg-violet-700 transition-colors">Тийм · 30 хоног</button>
+                        <button onClick={() => updateTask(i, { recurConfirmed: false })} className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 font-semibold hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">Үгүй</button>
+                      </div>
+                    )}
+                    {task.recurring && task.recurConfirmed === true && (
+                      <div className="flex items-center gap-1.5 text-xs bg-violet-50 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded-full px-2.5 py-0.5 w-fit">
+                        <RefreshCw size={10} />
+                        <span>{recurringLabel(task.recurring)}</span>
+                        <span className="opacity-60">· {countInstances(task.recurring)} удаа</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* If AI already recognized date → just show it */}
-                {task.date ? (
+                {/* Recurring confirmed: time-only picker */}
+                {task.recurring && task.recurConfirmed === true ? (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1">
+                      <Clock size={10} /> Цаг (нэмэлт)
+                    </label>
+                    <input
+                      type="time"
+                      value={task.time}
+                      onChange={e => updateTask(i, { time: e.target.value })}
+                      className="text-xs rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-violet-400 w-36"
+                    />
+                  </div>
+                ) : task.date ? (
                   <div className="flex items-center gap-1.5 text-xs text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 rounded-lg px-3 py-2">
                     <Calendar size={10} />
                     <span>{task.date}{task.time ? ` · ${task.time}` : ''}</span>
@@ -335,6 +432,26 @@ export default function RecordSection() {
                 )}
                   </>
                 )}
+
+                {/* Category */}
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs text-gray-500 dark:text-slate-400 font-semibold">Ангилал</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => updateTask(i, { category: cat })}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                          task.category === cat
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold'
+                            : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Urgency - always shown */}
                 <div className="flex flex-col gap-1.5">

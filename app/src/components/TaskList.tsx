@@ -12,6 +12,7 @@ type Props = {
   activeTab: Tab;
   onToggle:  (task: Task) => void;
   onDelete:  (task: Task) => void;
+  onEdit?:   (task: Task) => void;
 };
 
 const EMPTY_MSG: Record<Tab, string> = {
@@ -26,7 +27,7 @@ const EMPTY_ICON: Record<Tab, keyof typeof Ionicons.glyphMap> = {
   completed: 'ribbon-outline',
 };
 
-export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete }: Props) {
+export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete, onEdit }: Props) {
   const { colors: C } = useTheme();
 
   if (loading && tasks.length === 0) {
@@ -52,6 +53,7 @@ export default function TaskList({ tasks, loading, activeTab, onToggle, onDelete
           task={task}
           onToggle={() => onToggle(task)}
           onDelete={() => onDelete(task)}
+          onEdit={() => onEdit?.(task)}
         />
       ))}
     </>

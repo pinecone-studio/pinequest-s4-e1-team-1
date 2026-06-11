@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet, Modal,
   ScrollView, Alert, ActivityIndicator, Animated,
   TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerChangeEvent } from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   useAudioRecorder, useAudioRecorderState,
@@ -14,7 +15,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../theme/ThemeContext';
-import { transcribeAudio, processText, saveEntry } from '../api';
+import { transcribeAudio, processText, saveEntry, parseDatetime, RecurringPattern } from '../api';
+
+const WEEKDAYS = ['Ням', 'Даваа', 'Мягмар', 'Лхагва', 'Пүрэв', 'Баасан', 'Бямба'];
+const MONTHS   = ['1-р сар','2-р сар','3-р сар','4-р сар','5-р сар','6-р сар','7-р сар','8-р сар','9-р сар','10-р сар','11-р сар','12-р сар'];
+
+
+function formatDate() {
+  const d = new Date();
+  return `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
+}
+
+function parseDue(due: string): { date: string; time: string } {
+  if (!due) return { date: '', time: '' };
+  if (due.includes('T')) {
+    const [date, timePart] = due.split('T');
+    return { date, time: timePart.slice(0, 5) };
+  }
+  return { date: due, time: '' };
+}
 
 const CHIMEGE_PRESET = {
   extension: '.wav', sampleRate: 16000, numberOfChannels: 1, bitRate: 256000,
@@ -24,12 +43,89 @@ const CHIMEGE_PRESET = {
 };
 
 type ProcessResult = {
-  tasks: { title: string; due: string }[];
+  tasks: { title: string; due: string; category: string; recurring?: RecurringPattern }[];
   events: { title: string; datetime: string }[];
   summary: string;
 };
 
-type Phase = 'idle' | 'recording' | 'processing' | 'done';
+const CATEGORIES = ['Ажил', 'Хувийн', 'Эрүүл мэнд', 'Гэр бүл', 'Сурлага', 'Хобби', 'Бусад'];
+
+type ClarifyTask = {
+  title: string;
+  date: string;
+  time: string;
+  urgent: boolean;
+  inputMode: 'pick' | 'voice';
+  category: string;
+  recurring?: RecurringPattern;
+  recurConfirmed?: boolean;
+};
+
+function recurringLabel(r: RecurringPattern): string {
+  if (r.type === 'weekly_days') {
+    return `7 хоног бүр · ${r.days.map(d => WEEKDAYS[d]).join(', ')}`;
+  }
+  return `Сар бүр · ${r.days.join(', ')}-нд`;
+}
+
+function countInstances(r: RecurringPattern): number {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let n = 0;
+  if (r.type === 'weekly_days') {
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      if (r.days.includes(d.getDay())) n++;
+    }
+  } else {
+    for (let m = 0; m < 12; m++) {
+      for (const day of r.days) {
+        const d = new Date(today.getFullYear(), today.getMonth() + m, day);
+        if (d >= today && d.getDate() === day) n++;
+      }
+    }
+  }
+  return n;
+}
+
+type SaveableTask = { title: string; due: string; priority: string; category: string };
+
+function expandTask(t: ClarifyTask): SaveableTask[] {
+  const base = { title: t.title, priority: t.urgent ? 'high' : 'medium', category: t.category };
+  const mkDue = (dateStr: string) => t.time ? `${dateStr}T${t.time}:00` : dateStr;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  if (!t.recurring || t.recurConfirmed === false) {
+    if (t.recurring?.type === 'weekly_days' && t.recurConfirmed === false) {
+      return t.recurring.days.map(wd => {
+        const d = new Date(today);
+        const until = (wd - today.getDay() + 7) % 7 || 7;
+        d.setDate(today.getDate() + until);
+        return { ...base, due: mkDue(d.toISOString().split('T')[0]) };
+      });
+    }
+    return [{ ...base, due: t.date ? mkDue(t.date) : '' }];
+  }
+
+  const results: SaveableTask[] = [];
+  if (t.recurring.type === 'weekly_days') {
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(today); d.setDate(today.getDate() + i);
+      if (t.recurring.days.includes(d.getDay()))
+        results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+    }
+  } else {
+    for (let m = 0; m < 12; m++) {
+      for (const day of t.recurring.days) {
+        const d = new Date(today.getFullYear(), today.getMonth() + m, day);
+        if (d >= today && d.getDate() === day)
+          results.push({ ...base, due: mkDue(d.toISOString().split('T')[0]) });
+      }
+    }
+  }
+  return results.length ? results : [{ ...base, due: '' }];
+}
+
+type Phase = 'idle' | 'recording' | 'processing' | 'clarifying' | 'saving' | 'done';
 type Mode = 'voice' | 'text';
 
 export default function RecordScreen() {
@@ -43,6 +139,10 @@ export default function RecordScreen() {
   const [transcribed, setTranscribed] = useState('');
   const [result, setResult] = useState<ProcessResult | null>(null);
   const [manualText, setManualText] = useState('');
+  const [clarifyTasks, setClarifyTasks] = useState<ClarifyTask[]>([]);
+  const [taskVoiceIdx, setTaskVoiceIdx] = useState<number | null>(null);
+  const [taskVoicePhase, setTaskVoicePhase] = useState<'idle' | 'recording' | 'processing'>('idle');
+  const [pickerOpen, setPickerOpen] = useState<{ idx: number; mode: 'date' | 'time' } | null>(null);
 
   const pulse1 = useRef(new Animated.Value(1)).current;
   const opacity1 = useRef(new Animated.Value(0.7)).current;
@@ -91,6 +191,14 @@ export default function RecordScreen() {
     }
   }, [state.isRecording]);
 
+  const toClarifying = (processed: ProcessResult) => {
+    setClarifyTasks(processed.tasks.map(t => {
+      const { date, time } = parseDue(t.due);
+      return { title: t.title, date, time, urgent: false, inputMode: date ? 'pick' : 'voice', category: t.category || 'Бусад', recurring: t.recurring, recurConfirmed: t.recurring?.confirmed === true ? true : undefined };
+    }));
+    setPhase('clarifying');
+  };
+
   const handleVoicePress = async () => {
     if (state.isRecording) {
       await recorder.stop();
@@ -103,9 +211,12 @@ export default function RecordScreen() {
         setTranscribed(text);
         const processed = await processText(text);
         setResult(processed);
-        await saveEntry({ text, ...processed });
-        setPhase('done');
-        if (processed.tasks?.length) navigation.navigate('Tasks');
+        if (processed.tasks.length > 0) {
+          toClarifying(processed);
+        } else {
+          await saveEntry({ text, ...processed });
+          setPhase('done');
+        }
       } catch (err: any) {
         Alert.alert('Алдаа', err?.response?.data?.error ?? err.message ?? 'Алдаа гарлаа');
         setPhase('idle');
@@ -133,9 +244,12 @@ export default function RecordScreen() {
       const processed = await processText(manualText.trim());
       setTranscribed(manualText.trim());
       setResult(processed);
-      await saveEntry({ text: manualText.trim(), ...processed });
-      setPhase('done');
-      if (processed.tasks?.length) navigation.navigate('Tasks');
+      if (processed.tasks.length > 0) {
+        toClarifying(processed);
+      } else {
+        await saveEntry({ text: manualText.trim(), ...processed });
+        setPhase('done');
+      }
     } catch (err: any) {
       Alert.alert('Алдаа', err?.response?.data?.error ?? err.message ?? 'Алдаа гарлаа');
       setPhase('idle');
@@ -144,15 +258,100 @@ export default function RecordScreen() {
     }
   };
 
+  const handleClarifySave = async () => {
+    if (!result) return;
+    setPhase('saving');
+    try {
+      const updatedTasks = clarifyTasks.flatMap(expandTask);
+      await saveEntry({ text: transcribed, tasks: updatedTasks, events: result.events, summary: result.summary });
+      setPhase('done');
+    } catch (err: any) {
+      Alert.alert('Алдаа', err?.response?.data?.error ?? err.message ?? 'Хадгалахад алдаа гарлаа');
+      setPhase('clarifying');
+    }
+  };
+
+  const handleTaskVoicePress = async (i: number) => {
+    if (taskVoiceIdx !== null && taskVoiceIdx !== i) return;
+    if (taskVoiceIdx === i && taskVoicePhase === 'recording') {
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (!uri) { setTaskVoiceIdx(null); setTaskVoicePhase('idle'); return; }
+      setTaskVoicePhase('processing');
+      try {
+        const { text } = await transcribeAudio(uri);
+        const { due } = await parseDatetime(text);
+        const { date, time } = parseDue(due);
+        if (date) {
+          updateClarifyTask(i, { date, time, inputMode: 'pick' });
+        } else {
+          Alert.alert('Огноо танигдсангүй', '"Маргааш 3 цагт" гэх мэтээр дахин оролдоно уу');
+        }
+      } catch {
+        Alert.alert('Алдаа', 'Огноо таниж чадсангүй, дахин оролдоно уу');
+      } finally {
+        setTaskVoiceIdx(null);
+        setTaskVoicePhase('idle');
+      }
+    } else {
+      setTaskVoiceIdx(i);
+      setTaskVoicePhase('recording');
+      try {
+        await recorder.prepareToRecordAsync();
+        recorder.record();
+      } catch (err: any) {
+        Alert.alert('Алдаа', err?.message ?? 'Бичлэг эхлүүлж чадсангүй');
+        setTaskVoiceIdx(null);
+        setTaskVoicePhase('idle');
+      }
+    }
+  };
+
+  const updateClarifyTask = (i: number, fields: Partial<ClarifyTask>) => {
+    setClarifyTasks(prev => prev.map((t, idx) => idx === i ? { ...t, ...fields } : t));
+  };
+
+  const getPickerDate = (idx: number): Date => {
+    const t = clarifyTasks[idx];
+    if (t.date) {
+      const d = new Date(t.time ? `${t.date}T${t.time}:00` : t.date);
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  };
+
+  const handlePickerChange = (_ev: DateTimePickerChangeEvent, selected: Date) => {
+    if (!pickerOpen) return;
+    const { idx, mode } = pickerOpen;
+    if (mode === 'date') {
+      const y = selected.getFullYear();
+      const m = String(selected.getMonth() + 1).padStart(2, '0');
+      const d = String(selected.getDate()).padStart(2, '0');
+      updateClarifyTask(idx, { date: `${y}-${m}-${d}` });
+      if (Platform.OS === 'android') setPickerOpen(null);
+    } else {
+      const h = String(selected.getHours()).padStart(2, '0');
+      const min = String(selected.getMinutes()).padStart(2, '0');
+      updateClarifyTask(idx, { time: `${h}:${min}` });
+      if (Platform.OS === 'android') setPickerOpen(null);
+    }
+  };
+
   const handleReset = () => {
     setPhase('idle');
     setTranscribed('');
     setResult(null);
     setManualText('');
+    setClarifyTasks([]);
+    setTaskVoiceIdx(null);
+    setTaskVoicePhase('idle');
   };
 
   const isRecording = state.isRecording;
   const isProcessing = phase === 'processing';
+  const isClarifying = phase === 'clarifying';
+  const isSaving = phase === 'saving';
+  const showModeTabs = phase === 'idle' || phase === 'recording' || phase === 'processing';
   const btnBg = isRecording ? C.danger : isProcessing ? C.textMuted : C.accent;
 
   const tabIndicatorLeft = tabAnim.interpolate({
@@ -174,63 +373,53 @@ export default function RecordScreen() {
           {/* Header */}
           <View style={s.header}>
             <Text style={[s.greeting, { color: C.text }]}>MonTask</Text>
-            <Text style={[s.subtitle, { color: C.textSec }]}>Тэмдэглэл үүсгэх</Text>
+            <Text style={[s.subtitle, { color: C.textSec }]}>{formatDate()}</Text>
           </View>
 
-          {/* Mode tab switcher */}
-          <View style={[s.tabWrap, {
-            backgroundColor: isDark ? C.surfaceAlt : '#EEF2FF',
-            borderColor: isDark ? C.border : C.accentMid,
-          }]}>
-            <Animated.View
-              style={[s.tabIndicator, {
-                backgroundColor: isDark ? C.surface : '#fff',
-                left: tabIndicatorLeft,
-                shadowColor: C.accent,
-              }]}
-            />
-            <TouchableOpacity
-              style={s.tabBtn}
-              onPress={() => { setMode('voice'); if (phase === 'done') handleReset(); }}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="mic"
-                size={16}
-                color={mode === 'voice' ? C.accent : C.textMuted}
+          {/* Mode tab switcher — hidden during clarify/saving/done */}
+          {showModeTabs && (
+            <View style={[s.tabWrap, {
+              backgroundColor: isDark ? C.surfaceAlt : '#EEF2FF',
+              borderColor: isDark ? C.border : C.accentMid,
+            }]}>
+              <Animated.View
+                style={[s.tabIndicator, {
+                  backgroundColor: isDark ? C.surface : '#fff',
+                  left: tabIndicatorLeft,
+                  shadowColor: C.accent,
+                }]}
               />
-              <Text style={[s.tabLabel, { color: mode === 'voice' ? C.accent : C.textMuted, fontWeight: mode === 'voice' ? '700' : '500' }]}>
-                Хоолой
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={s.tabBtn}
-              onPress={() => {
-                if (state.isRecording) { recorder.stop().catch(() => {}); setPhase('idle'); }
-                setMode('text');
-                if (phase === 'done') handleReset();
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name="create-outline"
-                size={16}
-                color={mode === 'text' ? C.accent : C.textMuted}
-              />
-              <Text style={[s.tabLabel, { color: mode === 'text' ? C.accent : C.textMuted, fontWeight: mode === 'text' ? '700' : '500' }]}>
-                Гараар
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={s.tabBtn}
+                onPress={() => { setMode('voice'); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="mic" size={16} color={mode === 'voice' ? C.accent : C.textMuted} />
+                <Text style={[s.tabLabel, { color: mode === 'voice' ? C.accent : C.textMuted, fontWeight: mode === 'voice' ? '700' : '500' }]}>
+                  Хоолой
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.tabBtn}
+                onPress={() => {
+                  if (state.isRecording) { recorder.stop().catch(() => {}); setPhase('idle'); }
+                  setMode('text');
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="create-outline" size={16} color={mode === 'text' ? C.accent : C.textMuted} />
+                <Text style={[s.tabLabel, { color: mode === 'text' ? C.accent : C.textMuted, fontWeight: mode === 'text' ? '700' : '500' }]}>
+                  Гараар
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* VOICE MODE */}
-          {mode === 'voice' && (
+          {mode === 'voice' && showModeTabs && (
             <View style={s.stage}>
               <View style={s.micContainer}>
-                {/* Static ambient glow */}
                 <View style={[s.ambientGlow, { backgroundColor: isRecording ? '#ef444418' : C.accentLight }]} />
-
-                {/* Single pulse ring — recording only */}
                 {isRecording && (
                   <Animated.View style={[s.pulseRing, {
                     transform: [{ scale: pulse1 }],
@@ -238,7 +427,6 @@ export default function RecordScreen() {
                     borderColor: '#ef4444',
                   }]} />
                 )}
-
                 <Animated.View style={[s.micShadow, { transform: [{ scale: btnScale }], shadowColor: btnBg }]}>
                   <TouchableOpacity
                     onPress={handleVoicePress}
@@ -248,11 +436,9 @@ export default function RecordScreen() {
                   >
                     <LinearGradient
                       colors={
-                        isRecording
-                          ? ['#ef4444', '#dc2626']
-                          : isProcessing
-                            ? [C.textMuted, C.textMuted]
-                            : ['#7c3aed', '#db2777']
+                        isRecording ? ['#ef4444', '#dc2626']
+                          : isProcessing ? [C.textMuted, C.textMuted]
+                          : ['#7c3aed', '#db2777']
                       }
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
@@ -297,7 +483,7 @@ export default function RecordScreen() {
           )}
 
           {/* TEXT MODE */}
-          {mode === 'text' && (
+          {mode === 'text' && showModeTabs && (
             <View style={s.textMode}>
               <View style={[s.textInputWrap, {
                 backgroundColor: C.surface,
@@ -315,7 +501,7 @@ export default function RecordScreen() {
                   multiline
                   value={manualText}
                   onChangeText={setManualText}
-                  editable={!isProcessing && phase !== 'done'}
+                  editable={!isProcessing}
                   textAlignVertical="top"
                 />
                 <Text style={[s.charCount, { color: C.textMuted }]}>
@@ -329,7 +515,7 @@ export default function RecordScreen() {
                   shadowColor: C.accent,
                 }]}
                 onPress={handleTextSubmit}
-                disabled={!manualText.trim() || isProcessing || phase === 'done'}
+                disabled={!manualText.trim() || isProcessing}
                 activeOpacity={0.85}
               >
                 {isProcessing ? (
@@ -344,8 +530,8 @@ export default function RecordScreen() {
             </View>
           )}
 
-          {/* Result cards */}
-          {!!transcribed && (
+          {/* Transcript card */}
+          {!!transcribed && phase !== 'idle' && (
             <View style={[s.card, {
               backgroundColor: C.surface,
               borderColor: isDark ? C.border : '#D1D5DB',
@@ -361,7 +547,8 @@ export default function RecordScreen() {
             </View>
           )}
 
-          {result?.summary ? (
+          {/* AI Summary */}
+          {!!result?.summary && phase !== 'idle' && (
             <View style={[s.cardHighlight, { backgroundColor: C.accentLight, borderColor: C.accentMid }]}>
               <View style={s.cardHeader}>
                 <Ionicons name="sparkles-outline" size={14} color={C.accent} />
@@ -369,9 +556,229 @@ export default function RecordScreen() {
               </View>
               <Text style={[s.cardText, { color: C.text }]}>{result.summary}</Text>
             </View>
-          ) : null}
+          )}
 
-          {result?.tasks && result.tasks.length > 0 && (
+          {/* ── CLARIFYING phase ── */}
+          {isClarifying && (
+            <View style={s.clarifySection}>
+              <Text style={[s.clarifyTitle, { color: C.text }]}>Даалгавруудыг тодотгоно уу</Text>
+              <Text style={[s.clarifySub, { color: C.textMuted }]}>Огноо, цаг болон яаралтай эсэхийг оруулна уу</Text>
+
+              {clarifyTasks.map((task, i) => {
+                const isThisRec  = taskVoiceIdx === i && taskVoicePhase === 'recording';
+                const isThisProc = taskVoiceIdx === i && taskVoicePhase === 'processing';
+                const otherBusy  = taskVoiceIdx !== null && taskVoiceIdx !== i;
+
+                return (
+                  <View key={i} style={[s.clarifyCard, { backgroundColor: C.surface, borderColor: isDark ? C.border : '#e5e7eb' }]}>
+                    {/* Number + title */}
+                    <View style={s.clarifyTitleRow}>
+                      <View style={[s.clarifyBadge, { backgroundColor: C.accentLight }]}>
+                        <Text style={[s.clarifyBadgeText, { color: C.accent }]}>{i + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1, gap: 5 }}>
+                        <Text style={[s.clarifyTaskTitle, { color: C.text }]} numberOfLines={2}>{task.title}</Text>
+                        {task.recurring && task.recurConfirmed === undefined && (
+                          <View style={[s.recurConfirmRow, { backgroundColor: '#fffbeb', borderColor: '#fcd34d' }]}>
+                            <Ionicons name="repeat-outline" size={13} color="#b45309" />
+                            <Text style={[s.recurConfirmText, { color: '#b45309', flex: 1 }]}>7 хоног бүр давтагдах уу?</Text>
+                            <TouchableOpacity
+                              style={[s.recurBtn, { backgroundColor: '#7c3aed' }]}
+                              onPress={() => updateClarifyTask(i, { recurConfirmed: true })}
+                            >
+                              <Text style={s.recurBtnText}>Тийм · 30 хоног</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[s.recurBtn, { backgroundColor: C.surfaceAlt }]}
+                              onPress={() => updateClarifyTask(i, { recurConfirmed: false })}
+                            >
+                              <Text style={[s.recurBtnText, { color: C.textMuted }]}>Үгүй</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {task.recurring && task.recurConfirmed === true && (
+                          <View style={[s.recurBadge, { backgroundColor: '#f3e8ff', borderColor: '#d8b4fe' }]}>
+                            <Ionicons name="repeat-outline" size={11} color="#7c3aed" />
+                            <Text style={[s.recurBadgeText, { color: '#7c3aed' }]}>
+                              {recurringLabel(task.recurring)}
+                            </Text>
+                            <Text style={[s.recurBadgeCount, { color: '#7c3aed' }]}>
+                              · {countInstances(task.recurring)} удаа
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+
+                    {/* Recurring confirmed: time-only */}
+                    {task.recurring && task.recurConfirmed === true && (
+                      <TouchableOpacity
+                        style={[s.datePickBtn, { backgroundColor: C.surfaceAlt, borderColor: task.time ? C.accent : C.border }]}
+                        onPress={() => setPickerOpen({ idx: i, mode: 'time' })}
+                      >
+                        <Ionicons name="time-outline" size={14} color={task.time ? C.accent : C.textMuted} />
+                        <Text style={[s.datePickText, { color: task.time ? C.text : C.textMuted }]}>
+                          {task.time || 'Цаг (нэмэлт)'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+
+                    {/* Mode toggle + pickers — non-recurring only */}
+                    {!task.recurring && (<>
+                    <View style={[s.modeToggle, { borderColor: isDark ? C.border : '#e5e7eb' }]}>
+                      <TouchableOpacity
+                        style={[s.modeBtn, task.inputMode === 'pick' && { backgroundColor: C.accent }]}
+                        onPress={() => updateClarifyTask(i, { inputMode: 'pick' })}
+                      >
+                        <Ionicons name="calendar-outline" size={13} color={task.inputMode === 'pick' ? '#fff' : C.textMuted} />
+                        <Text style={[s.modeBtnText, { color: task.inputMode === 'pick' ? '#fff' : C.textMuted }]}>Өдөр сонгох</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.modeBtn, s.modeBtnRight, { borderColor: isDark ? C.border : '#e5e7eb' }, task.inputMode === 'voice' && { backgroundColor: C.accent }]}
+                        onPress={() => updateClarifyTask(i, { inputMode: 'voice' })}
+                      >
+                        <Ionicons name="mic-outline" size={13} color={task.inputMode === 'voice' ? '#fff' : C.textMuted} />
+                        <Text style={[s.modeBtnText, { color: task.inputMode === 'voice' ? '#fff' : C.textMuted }]}>Дуугаар хэлэх</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Pick: date + time picker buttons */}
+                    {task.inputMode === 'pick' && (
+                      <View style={s.dateRow}>
+                        <TouchableOpacity
+                          style={[s.datePickBtn, { backgroundColor: C.surfaceAlt, borderColor: task.date ? C.accent : C.border }]}
+                          onPress={() => setPickerOpen({ idx: i, mode: 'date' })}
+                        >
+                          <Ionicons name="calendar-outline" size={14} color={task.date ? C.accent : C.textMuted} />
+                          <Text style={[s.datePickText, { color: task.date ? C.text : C.textMuted }]}>
+                            {task.date || 'Огноо'}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[s.datePickBtn, { backgroundColor: C.surfaceAlt, borderColor: task.time ? C.accent : C.border }]}
+                          onPress={() => setPickerOpen({ idx: i, mode: 'time' })}
+                        >
+                          <Ionicons name="time-outline" size={14} color={task.time ? C.accent : C.textMuted} />
+                          <Text style={[s.datePickText, { color: task.time ? C.text : C.textMuted }]}>
+                            {task.time || 'Цаг'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    {/* Voice: mini mic button for date */}
+                    {task.inputMode === 'voice' && (
+                      <View style={s.voiceRow}>
+                        <View style={s.taskMicWrap}>
+                          {isThisRec && (
+                            <Animated.View style={[s.taskPulseRing, {
+                              position: 'absolute',
+                              backgroundColor: '#ef444440',
+                              borderRadius: 40,
+                              width: 80, height: 80,
+                              top: -8, left: -8,
+                            }]} />
+                          )}
+                          <TouchableOpacity
+                            style={[s.taskMicBtn, {
+                              backgroundColor: isThisRec ? '#ef4444' : isThisProc ? C.textMuted : C.accent,
+                              shadowColor: isThisRec ? '#ef4444' : C.accent,
+                              shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+                              elevation: 6,
+                            }]}
+                            onPress={() => handleTaskVoicePress(i)}
+                            disabled={isThisProc || otherBusy}
+                            activeOpacity={0.8}
+                          >
+                            {isThisProc ? (
+                              <ActivityIndicator size="small" color="#fff" />
+                            ) : isThisRec ? (
+                              <View style={s.stopSquare} />
+                            ) : (
+                              <Ionicons name="mic" size={24} color="#fff" />
+                            )}
+                          </TouchableOpacity>
+                        </View>
+                        <Text style={[s.voiceHint, { color: C.textMuted }]}>
+                          {isThisProc
+                            ? 'Огноо таних...'
+                            : isThisRec
+                            ? '"Маргааш 3 цагт" гэж хэлж зогсооно уу'
+                            : 'Дарж огноо, цагаа хэлнэ үү'}
+                        </Text>
+                      </View>
+                    )}
+                    </>)}
+
+                    {/* Category picker */}
+                    <Text style={[s.fieldLabel, { color: C.textMuted, marginTop: 8 }]}>АНГИЛАЛ</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', gap: 7 }}>
+                        {CATEGORIES.map(cat => (
+                          <TouchableOpacity
+                            key={cat}
+                            style={[s.catChip, {
+                              backgroundColor: task.category === cat ? C.accentLight : C.surfaceAlt,
+                              borderColor: task.category === cat ? C.accent : C.border,
+                            }]}
+                            onPress={() => updateClarifyTask(i, { category: cat })}
+                          >
+                            <Text style={[s.catChipText, { color: task.category === cat ? C.accent : C.textMuted, fontWeight: task.category === cat ? '700' : '500' }]}>
+                              {cat}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+
+                    {/* Urgency toggle — always shown */}
+                    <View style={[s.urgentLabel, { marginTop: 0 }]}>
+                      <Ionicons name="flame" size={12} color={C.textMuted} />
+                      <Text style={[s.fieldLabel, { color: C.textMuted, marginBottom: 0 }]}>Яаралтай уу?</Text>
+                    </View>
+                    <View style={s.urgentRow}>
+                      <TouchableOpacity
+                        style={[s.urgentBtn, { backgroundColor: task.urgent ? '#f43f5e' : C.surfaceAlt }]}
+                        onPress={() => updateClarifyTask(i, { urgent: true })}
+                      >
+                        <Text style={[s.urgentBtnText, { color: task.urgent ? '#fff' : C.textMuted }]}>
+                          Тийм, яаралтай
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[s.urgentBtn, { backgroundColor: !task.urgent ? C.accent : C.surfaceAlt }]}
+                        onPress={() => updateClarifyTask(i, { urgent: false })}
+                      >
+                        <Text style={[s.urgentBtnText, { color: !task.urgent ? '#fff' : C.textMuted }]}>
+                          Тийм биш
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+
+              <TouchableOpacity
+                style={[s.saveClarifyBtn, { backgroundColor: C.accent, shadowColor: C.accent }]}
+                onPress={handleClarifySave}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="checkmark-circle-outline" size={18} color="#fff" />
+                <Text style={s.saveClarifyBtnText}>Хадгалах</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* ── SAVING ── */}
+          {isSaving && (
+            <View style={s.savingSection}>
+              <ActivityIndicator size="large" color={C.accent} />
+              <Text style={[s.savingText, { color: C.textMuted }]}>Хадгалж байна...</Text>
+            </View>
+          )}
+
+          {/* ── DONE: result cards ── */}
+          {phase === 'done' && result?.tasks && result.tasks.length > 0 && (
             <View style={[s.card, {
               backgroundColor: C.surface,
               borderColor: isDark ? C.border : '#D1D5DB',
@@ -379,21 +786,26 @@ export default function RecordScreen() {
             }]}>
               <View style={s.cardHeader}>
                 <Ionicons name="checkbox-outline" size={14} color={C.textMuted} />
-                <Text style={[s.cardLabel, { color: C.textMuted }]}>Даалгавар · {result.tasks.length}</Text>
+                <Text style={[s.cardLabel, { color: C.textMuted }]}>
+                  Даалгавар · {clarifyTasks.length || result.tasks.length}
+                </Text>
               </View>
-              {result.tasks.map((t, i) => (
+              {(clarifyTasks.length ? clarifyTasks : result.tasks).map((t, i) => (
                 <View key={i} style={s.taskRow}>
                   <View style={[s.dot, { backgroundColor: C.accent }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={[s.taskName, { color: C.text }]}>{t.title}</Text>
-                    {t.due ? <Text style={[s.taskDue, { color: C.textMuted }]}>{t.due}</Text> : null}
+                    {'urgent' in t
+                      ? t.date ? <Text style={[s.taskDue, { color: C.textMuted }]}>{t.date}{t.time ? ` ${t.time}` : ''}</Text> : null
+                      : t.due ? <Text style={[s.taskDue, { color: C.textMuted }]}>{t.due}</Text> : null
+                    }
                   </View>
                 </View>
               ))}
             </View>
           )}
 
-          {result?.events && result.events.length > 0 && (
+          {phase === 'done' && result?.events && result.events.length > 0 && (
             <View style={[s.card, {
               backgroundColor: C.surface,
               borderColor: isDark ? C.border : '#D1D5DB',
@@ -413,16 +825,61 @@ export default function RecordScreen() {
           )}
 
           {phase === 'done' && (
-            <TouchableOpacity
-              style={[s.newBtn, { borderColor: C.accentMid, backgroundColor: C.accentLight }]}
-              onPress={handleReset}
-            >
-              <Ionicons name="add-circle-outline" size={18} color={C.accent} />
-              <Text style={[s.newBtnText, { color: C.accent }]}>Шинэ тэмдэглэл</Text>
-            </TouchableOpacity>
+            <View style={s.doneActions}>
+              <TouchableOpacity
+                style={[s.tasksBtn, { backgroundColor: C.accent }]}
+                onPress={() => navigation.navigate('Tasks')}
+              >
+                <Ionicons name="checkbox-outline" size={18} color="#fff" />
+                <Text style={s.tasksBtnText}>Даалгавар харах</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.newBtn, { borderColor: C.accentMid, backgroundColor: C.accentLight }]}
+                onPress={handleReset}
+              >
+                <Ionicons name="add-circle-outline" size={18} color={C.accent} />
+                <Text style={[s.newBtnText, { color: C.accent }]}>Шинэ тэмдэглэл</Text>
+              </TouchableOpacity>
+            </View>
           )}
 
         </ScrollView>
+
+        {/* DateTimePicker — iOS modal, Android dialog */}
+        {pickerOpen && (
+          Platform.OS === 'ios' ? (
+            <Modal transparent animationType="slide">
+              <View style={s.pickerOverlay}>
+                <View style={[s.pickerSheet, { backgroundColor: C.surface }]}>
+                  <View style={s.pickerHeader}>
+                    <Text style={[s.pickerTitle, { color: C.text }]}>
+                      {pickerOpen.mode === 'date' ? 'Огноо сонгох' : 'Цаг сонгох'}
+                    </Text>
+                    <TouchableOpacity onPress={() => setPickerOpen(null)}>
+                      <Text style={[s.pickerDone, { color: C.accent }]}>Болсон</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={getPickerDate(pickerOpen.idx)}
+                    mode={pickerOpen.mode}
+                    display="spinner"
+                    locale="mn-MN"
+                    minuteInterval={5}
+                    onValueChange={handlePickerChange}
+                    style={{ width: '100%' }}
+                  />
+                </View>
+              </View>
+            </Modal>
+          ) : (
+            <DateTimePicker
+              value={getPickerDate(pickerOpen.idx)}
+              mode={pickerOpen.mode}
+              display="default"
+              onValueChange={handlePickerChange}
+            />
+          )
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -456,52 +913,29 @@ const s = StyleSheet.create({
 
   // Tab switcher
   tabWrap: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 4,
-    marginBottom: 8,
-    position: 'relative',
-    overflow: 'hidden',
+    flexDirection: 'row', borderRadius: 14, borderWidth: 1,
+    padding: 4, marginBottom: 8, position: 'relative', overflow: 'hidden',
   },
   tabIndicator: {
-    position: 'absolute',
-    top: 4,
-    width: '48%',
-    bottom: 4,
-    borderRadius: 10,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    position: 'absolute', top: 4, width: '48%', bottom: 4, borderRadius: 10,
+    shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   tabBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    zIndex: 1,
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, zIndex: 1,
   },
   tabLabel: { fontSize: 14 },
 
   // Voice stage
   stage: { alignItems: 'center', paddingVertical: 28, marginVertical: 4 },
-  micContainer: {
-    width: 300, height: 300,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  micContainer: { width: 300, height: 300, alignItems: 'center', justifyContent: 'center' },
   ambientGlow: { position: 'absolute', width: 230, height: 230, borderRadius: 115 },
   pulseRing: {
-    position: 'absolute',
-    width: BTN + 32, height: BTN + 32,
-    borderRadius: (BTN + 32) / 2,
-    borderWidth: 1.5,
+    position: 'absolute', width: BTN + 32, height: BTN + 32,
+    borderRadius: (BTN + 32) / 2, borderWidth: 1.5,
   },
   micShadow: {
-    borderRadius: BTN / 2,
-    shadowOpacity: 0.42, shadowRadius: 24,
+    borderRadius: BTN / 2, shadowOpacity: 0.42, shadowRadius: 24,
     shadowOffset: { width: 0, height: 10 }, elevation: 16,
   },
   micBtnTouch: { borderRadius: BTN / 2, overflow: 'hidden' },
@@ -517,15 +951,9 @@ const s = StyleSheet.create({
   // Text mode
   textMode: { paddingTop: 16, gap: 14 },
   textInputWrap: {
-    borderRadius: 18,
-    borderWidth: 1,
-    padding: 16,
-    minHeight: 180,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderRadius: 18, borderWidth: 1, padding: 16, minHeight: 180,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   textInputHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
   textInputLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
@@ -553,9 +981,93 @@ const s = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 3.5, marginTop: 6 },
   taskName: { fontSize: 14, lineHeight: 20, flex: 1 },
   taskDue: { fontSize: 12, marginTop: 2 },
+
+  // Clarification
+  clarifySection: { marginBottom: 12 },
+  clarifyTitle: { fontSize: 17, fontWeight: '800', marginBottom: 4 },
+  clarifySub: { fontSize: 13, marginBottom: 14 },
+  clarifyCard: {
+    borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 12,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 }, elevation: 2,
+  },
+  clarifyTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
+  clarifyBadge: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  clarifyBadgeText: { fontSize: 12, fontWeight: '800' },
+  clarifyTaskTitle: { fontSize: 14, fontWeight: '600', lineHeight: 20, flex: 1 },
+  modeToggle: {
+    flexDirection: 'row', borderRadius: 12, borderWidth: 1, overflow: 'hidden', marginBottom: 12,
+  },
+  modeBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 5, paddingVertical: 9,
+  },
+  modeBtnRight: { borderLeftWidth: 1 },
+  modeBtnText: { fontSize: 12, fontWeight: '600' },
+  dateRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  fieldLabel: { fontSize: 11, fontWeight: '600', marginBottom: 5 },
+  voiceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  taskMicWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
+  taskPulseRing: {},
+  taskMicBtn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  stopSquare: { width: 16, height: 16, borderRadius: 3, backgroundColor: '#fff' },
+  voiceHint: { fontSize: 12, flex: 1, lineHeight: 18 },
+  catChip: { borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 11, paddingVertical: 6 },
+  catChipText: { fontSize: 12 },
+  urgentLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
+  urgentRow: { flexDirection: 'row', gap: 8, marginTop: 0 },
+  urgentBtn: { flex: 1, paddingVertical: 10, borderRadius: 12, alignItems: 'center' },
+  urgentBtnText: { fontSize: 13, fontWeight: '600' },
+  saveClarifyBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 14,
+    shadowOpacity: 0.2, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+  },
+  saveClarifyBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+
+  // Saving
+  savingSection: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+  savingText: { fontSize: 14 },
+
+  // Done actions
+  doneActions: { gap: 10, marginBottom: 4 },
+  tasksBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: 14,
+  },
+  tasksBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   newBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, marginBottom: 4,
+    gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5,
   },
   newBtnText: { fontSize: 14, fontWeight: '600' },
+
+  // Date picker buttons
+  datePickBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7,
+    borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 11,
+  },
+  datePickText: { fontSize: 13, fontWeight: '500' },
+
+  // iOS picker modal
+  pickerOverlay: {
+    flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  pickerSheet: {
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingTop: 12, paddingBottom: 40,
+  },
+  pickerHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingBottom: 8,
+  },
+  pickerTitle: { fontSize: 16, fontWeight: '700' },
+  pickerDone: { fontSize: 15, fontWeight: '700' },
+  recurBadge:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
+  recurBadgeText:  { fontSize: 11, fontWeight: '600' },
+  recurBadgeCount: { fontSize: 11, fontWeight: '400', opacity: 0.7 },
+  recurConfirmRow: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 8, flexWrap: 'wrap' },
+  recurConfirmText:{ fontSize: 12, fontWeight: '600' },
+  recurBtn:        { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  recurBtnText:    { fontSize: 11, fontWeight: '700', color: '#fff' },
 });

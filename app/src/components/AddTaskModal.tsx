@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -13,13 +13,14 @@ import {
   Pressable,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { TaskPriority } from "../api";
+import { Task, TaskPriority } from "../api";
 import { PRIO_COLOR, PRIO_LABEL } from "./taskConstants";
 import { useTheme } from "../theme/ThemeContext";
 
 type Props = {
   visible: boolean;
   categories: string[];
+  initialTask?: Task;
   onClose: () => void;
   onSave: (
     title: string,
@@ -32,6 +33,7 @@ type Props = {
 export default function AddTaskModal({
   visible,
   categories,
+  initialTask,
   onClose,
   onSave,
 }: Props) {
@@ -41,6 +43,20 @@ export default function AddTaskModal({
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [category, setCategory] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (initialTask) {
+      setTitle(initialTask.title);
+      setDue(initialTask.due ?? "");
+      setPriority(initialTask.priority ?? "medium");
+      setCategory(initialTask.category ?? "");
+    } else {
+      setTitle("");
+      setDue("");
+      setPriority("medium");
+      setCategory("");
+    }
+  }, [initialTask, visible]);
 
   const reset = () => {
     setTitle("");
@@ -65,6 +81,8 @@ export default function AddTaskModal({
     }
   };
 
+  const isEdit = !!initialTask;
+
   return (
     <Modal
       visible={visible}
@@ -78,7 +96,7 @@ export default function AddTaskModal({
       >
         <View style={[s.sheet, { backgroundColor: C.surface }]}>
           <View style={[s.handle, { backgroundColor: C.border }]} />
-          <Text style={[s.title, { color: C.text }]}>Шинэ даалгавар</Text>
+          <Text style={[s.title, { color: C.text }]}>{isEdit ? 'Даалгавар засах' : 'Шинэ даалгавар'}</Text>
 
           <TextInput
             style={[
@@ -195,7 +213,7 @@ export default function AddTaskModal({
                 {saving ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={s.addText}>Нэмэх</Text>
+                  <Text style={s.addText}>{isEdit ? 'Хадгалах' : 'Нэмэх'}</Text>
                 )}
               </LinearGradient>
             </TouchableOpacity>

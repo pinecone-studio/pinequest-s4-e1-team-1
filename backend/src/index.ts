@@ -21,7 +21,7 @@ if (!fs.existsSync('uploads')) fs.mkdirSync('uploads');
 
 app.use(cors());
 app.use(express.json());
-app.use((req, _res, next) => { console.log(`${req.method} ${req.path} auth:${req.headers.authorization ? 'yes' : 'NO'}`); next(); });
+
 
 app.use('/api/transcribe', transcribeRouter);
 app.use('/api/process', processRouter);

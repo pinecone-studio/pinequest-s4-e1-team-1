@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, FileBarChart } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, FileBarChart, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
 import {
   fetchTasks,
   fetchReport,
@@ -26,6 +26,28 @@ function fmt(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 }
+
+type WorkloadSignal = 'overload' | 'ok' | 'underload';
+
+function getWorkloadSignal(taskCount: number, period: ReportPeriod): { workloadSignal: WorkloadSignal; workloadAdvice: string } {
+  const [overloadAt, okAt] =
+    period === 'day'   ? [8, 3]  :
+    period === 'week'  ? [40, 14] :
+                         [150, 45];
+  if (taskCount >= overloadAt) {
+    return { workloadSignal: 'overload', workloadAdvice: 'Хэт их ачаалалтай байна — burnout болох эрсдэлтэй. Нэн чухал зүйлдээ анхаараарай.' };
+  } else if (taskCount >= okAt) {
+    return { workloadSignal: 'ok', workloadAdvice: 'Маш сайн байлаа! Ачаалал тэнцвэртэй байна.' };
+  } else {
+    return { workloadSignal: 'underload', workloadAdvice: 'Даалгавар бага байна. Шинэ зорилго нэмж идэвхжүүлж болно.' };
+  }
+}
+
+const WORKLOAD_CONFIG: Record<WorkloadSignal, { bg: string; border: string; text: string; label: string; Icon: React.ComponentType<{ size?: number; className?: string }> }> = {
+  overload:  { bg: 'bg-rose-50 dark:bg-rose-950/40',   border: 'border-rose-200 dark:border-rose-800',   text: 'text-rose-700 dark:text-rose-300',   label: 'Хэт ачаалалтай', Icon: AlertTriangle },
+  ok:        { bg: 'bg-green-50 dark:bg-green-950/40', border: 'border-green-200 dark:border-green-800', text: 'text-green-700 dark:text-green-300', label: 'Тэнцвэртэй',     Icon: CheckCircle2 },
+  underload: { bg: 'bg-indigo-50 dark:bg-indigo-950/40', border: 'border-indigo-200 dark:border-indigo-800', text: 'text-indigo-700 dark:text-indigo-400', label: 'Бага ачаалал', Icon: TrendingUp },
+};
 
 function periodStart(date: string, period: ReportPeriod): string {
   const d = new Date(date);
@@ -59,6 +81,7 @@ function buildReport(
 ): ReportData {
   const start = periodStart(date, period);
   const done = filtered.filter((t) => t.status === "done").length;
+  const { workloadSignal, workloadAdvice } = getWorkloadSignal(filtered.length, period);
   return {
     period,
     type,
@@ -78,6 +101,8 @@ function buildReport(
     insights: ai?.insights ?? "",
     risks: ai?.risks ?? "",
     recommendations: ai?.recommendations ?? "",
+    workloadSignal,
+    workloadAdvice,
   };
 }
 
@@ -226,6 +251,21 @@ export default function InsightsPage() {
             AI дүгнэлт боловсруулж байна...
           </div>
         )}
+
+        {/* Workload banner */}
+        {report && !loading && report.workloadSignal && (() => {
+          const cfg = WORKLOAD_CONFIG[report.workloadSignal];
+          const { Icon } = cfg;
+          return (
+            <div className={`flex items-start gap-3 ${cfg.bg} border ${cfg.border} rounded-2xl px-4 py-3.5`}>
+              <Icon size={18} className={`${cfg.text} shrink-0 mt-0.5`} />
+              <div className="flex flex-col gap-0.5">
+                <span className={`text-xs font-bold uppercase tracking-wide ${cfg.text} opacity-70`}>{cfg.label}</span>
+                <p className={`text-sm font-medium ${cfg.text}`}>{report.workloadAdvice}</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Report cards */}
         {report &&

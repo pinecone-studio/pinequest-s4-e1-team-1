@@ -20,10 +20,12 @@ export async function transcribeAudio(uri: string) {
   return data as { text: string };
 }
 
+export type RecurringPattern = { type: 'monthly_days' | 'weekly_days'; days: number[]; confirmed?: boolean };
+
 export async function processText(text: string) {
   const { data } = await api.post('/api/process', { text }, { headers: await authHeader() });
   return data as {
-    tasks: { title: string; due: string }[];
+    tasks: { title: string; due: string; category: string; recurring?: RecurringPattern }[];
     events: { title: string; datetime: string }[];
     summary: string;
   };
@@ -31,12 +33,17 @@ export async function processText(text: string) {
 
 export async function saveEntry(body: {
   text: string;
-  tasks: { title: string; due: string }[];
+  tasks: { title: string; due: string; priority?: string; category?: string }[];
   events: { title: string; datetime: string }[];
   summary: string;
 }) {
   const { data } = await api.post('/api/entries', body, { headers: await authHeader() });
   return data;
+}
+
+export async function parseDatetime(text: string) {
+  const { data } = await api.post('/api/parse-datetime', { text }, { headers: await authHeader() });
+  return data as { due: string };
 }
 
 export type TaskPriority = 'high' | 'medium' | 'low';
@@ -68,6 +75,62 @@ export async function deleteUserData() {
 export type ReportPeriod = 'day' | 'week' | 'month';
 export type ReportType = 'general' | 'work';
 
+// ── User / username ──────────────────────────────────────────────────
+export async function getMe() {
+  const { data } = await api.get('/api/user/me', { headers: await authHeader() });
+  return data as { username: string | null };
+}
+
+export async function setUsername(username: string) {
+  const { data } = await api.post('/api/user/username', { username }, { headers: await authHeader() });
+  return data as { username: string };
+}
+
+export async function searchUsers(username: string) {
+  const { data } = await api.get('/api/user/search', { params: { username }, headers: await authHeader() });
+  return data as { uid: string; username: string }[];
+}
+
+// ── Friends ──────────────────────────────────────────────────────────
+export type Friend = { uid: string; username: string };
+export type FriendRequest = { id: string; fromUid: string; username: string };
+export type DayAvailability = { taskCount: number; busyTimes: string[] };
+
+export async function getFriends() {
+  const { data } = await api.get('/api/friends', { headers: await authHeader() });
+  return data as Friend[];
+}
+
+export async function sendFriendRequest(username: string) {
+  const { data } = await api.post('/api/friends/request', { username }, { headers: await authHeader() });
+  return data as { success: boolean };
+}
+
+export async function getFriendRequests() {
+  const { data } = await api.get('/api/friends/requests', { headers: await authHeader() });
+  return data as FriendRequest[];
+}
+
+export async function acceptFriendRequest(id: string) {
+  const { data } = await api.post(`/api/friends/accept/${id}`, {}, { headers: await authHeader() });
+  return data as { success: boolean };
+}
+
+export async function rejectFriendRequest(id: string) {
+  const { data } = await api.post(`/api/friends/reject/${id}`, {}, { headers: await authHeader() });
+  return data as { success: boolean };
+}
+
+export async function removeFriend(friendUid: string) {
+  const { data } = await api.delete(`/api/friends/${friendUid}`, { headers: await authHeader() });
+  return data as { success: boolean };
+}
+
+export async function getFriendCalendar(friendUid: string, month: string) {
+  const { data } = await api.get(`/api/friends/${friendUid}/calendar`, { params: { month }, headers: await authHeader() });
+  return data as Record<string, DayAvailability>;
+}
+
 export async function fetchReport(date: string, period: ReportPeriod = 'day', type: ReportType = 'general') {
   const { data } = await api.post('/api/report', { date, period, type }, { headers: await authHeader() });
   return data as {
@@ -89,5 +152,7 @@ export async function fetchReport(date: string, period: ReportPeriod = 'day', ty
     insights: string;
     risks: string;
     recommendations: string;
+    workloadSignal: 'overload' | 'ok' | 'underload';
+    workloadAdvice: string;
   };
 }

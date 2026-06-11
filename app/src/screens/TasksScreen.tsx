@@ -27,6 +27,32 @@ import { Tab, TODAY } from "../components/taskConstants";
 import { useTheme } from "../theme/ThemeContext";
 
 const CATS_KEY = "task_categories_v1";
+
+const PRIORITY_SCORE: Record<string, number> = { high: 3, medium: 1, low: 0 };
+
+function urgencyScore(due: string | undefined): number {
+  if (!due) return -1;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(due.slice(0, 10)); d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff < 0)   return 5;
+  if (diff === 0) return 4;
+  if (diff === 1) return 3;
+  if (diff <= 7)  return 2;
+  return 1;
+}
+
+function smartSort(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => {
+    const scoreA = urgencyScore(a.due) * 4 + (PRIORITY_SCORE[a.priority] ?? 1);
+    const scoreB = urgencyScore(b.due) * 4 + (PRIORITY_SCORE[b.priority] ?? 1);
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due.localeCompare(b.due);
+  });
+}
 const DEFAULT_CATS = [
   "Хувийн",
   "Ажил",
@@ -63,6 +89,7 @@ export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATS);
   const [addModal, setAddModal] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(CATS_KEY).then((v) => {
@@ -103,13 +130,13 @@ export default function TasksScreen() {
 
   const displayTasks = useMemo(
     () => ({
-      today: tasks.filter(
-        (t) => t.status !== "done" && (!t.due || t.due.slice(0, 10) <= TODAY),
+      today: smartSort(
+        tasks.filter((t) => t.status !== "done" && (!t.due || t.due.slice(0, 10) === TODAY)),
       ),
-      upcoming: tasks.filter(
-        (t) => t.status !== "done" && !!t.due && t.due.slice(0, 10) > TODAY,
+      upcoming: smartSort(
+        tasks.filter((t) => t.status !== "done" && !!t.due && t.due.slice(0, 10) > TODAY),
       ),
-      completed: tasks.filter((t) => t.status === "done"),
+      completed: tasks.filter((t) => t.status === "done").reverse(),
     }),
     [tasks],
   );
@@ -156,6 +183,23 @@ export default function TasksScreen() {
     setAddModal(false);
   };
 
+  const handleUpdate = async (
+    title: string,
+    due: string,
+    priority: TaskPriority,
+    category: string,
+  ) => {
+    if (!editTask) return;
+    const id = editTask._id;
+    setTasks((p) => p.map((t) => t._id === id ? { ...t, title, due, priority, category } : t));
+    setEditTask(null);
+    try {
+      await updateTask(id, { title, due, priority, category });
+    } catch {
+      load();
+    }
+  };
+
   const tabCounts = {
     today: displayTasks.today.length,
     upcoming: displayTasks.upcoming.length,
@@ -191,6 +235,7 @@ export default function TasksScreen() {
           activeTab={activeTab}
           onToggle={toggleComplete}
           onDelete={confirmDelete}
+          onEdit={setEditTask}
         />
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -208,6 +253,13 @@ export default function TasksScreen() {
         categories={categories}
         onClose={() => setAddModal(false)}
         onSave={handleSave}
+      />
+      <AddTaskModal
+        visible={!!editTask}
+        categories={categories}
+        initialTask={editTask ?? undefined}
+        onClose={() => setEditTask(null)}
+        onSave={handleUpdate}
       />
     </SafeAreaView>
   );

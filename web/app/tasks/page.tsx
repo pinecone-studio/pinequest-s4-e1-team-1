@@ -8,6 +8,33 @@ import AddReminderModal from "@/components/dashboard/AddReminderModal";
 
 type FilterTab = "all" | "todo" | "completed";
 
+const PRIORITY_SCORE: Record<string, number> = { high: 3, medium: 1, low: 0 };
+
+function urgencyScore(due: string | undefined): number {
+  if (!due) return -1;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(due.slice(0, 10)); d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff < 0)  return 5;  // overdue
+  if (diff === 0) return 4; // today
+  if (diff === 1) return 3; // tomorrow
+  if (diff <= 7)  return 2; // this week
+  return 1;                 // future
+}
+
+function smartSort(tasks: BackendTask[]): BackendTask[] {
+  return [...tasks].sort((a, b) => {
+    if (a.status !== b.status) return a.status === "pending" ? -1 : 1;
+    const scoreA = urgencyScore(a.due) * 4 + (PRIORITY_SCORE[a.priority] ?? 1);
+    const scoreB = urgencyScore(b.due) * 4 + (PRIORITY_SCORE[b.priority] ?? 1);
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due.localeCompare(b.due);
+  });
+}
+
 const TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "Бүгд" },
   { key: "todo", label: "Хийх" },
@@ -44,13 +71,15 @@ export default function TasksPage() {
     setTasks((prev) => prev.filter((t) => t._id !== id));
   }
 
-  const filtered = tasks
-    .filter((t) => {
-      if (filter === "todo") return t.status === "pending";
-      if (filter === "completed") return t.status === "done";
-      return true;
-    })
-    .filter((t) => t.title.toLowerCase().includes(search.toLowerCase()));
+  const filtered = smartSort(
+    tasks
+      .filter((t) => {
+        if (filter === "todo") return t.status === "pending";
+        if (filter === "completed") return t.status === "done";
+        return true;
+      })
+      .filter((t) => t.title.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const counts = {
     all: tasks.length,

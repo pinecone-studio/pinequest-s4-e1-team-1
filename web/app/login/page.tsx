@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Activity } from "lucide-react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { setUsername as apiSetUsername } from "@/lib/api";
 import Link from "next/link";
@@ -157,12 +157,7 @@ export default function LoginPage() {
           Буцах
         </Link>
         <div className="flex items-center gap-2 text-white/50 text-sm">
-          <div
-            className="w-5 h-5 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
-          >
-            <Activity size={11} color="white" />
-          </div>
+          <Image src="/logo.png" alt="MonTask" width={20} height={20} className="rounded-lg shrink-0" />
           MonTask
         </div>
         <div className="w-16" />

@@ -56,10 +56,12 @@ export async function transcribeAudio(blob: Blob) {
   return data as { text: string };
 }
 
+export type RecurringPattern = { type: 'monthly_days' | 'weekly_days'; days: number[]; confirmed?: boolean };
+
 export async function processText(text: string) {
   const { data } = await api.post('/api/process', { text });
   return data as {
-    tasks: { title: string; due: string }[];
+    tasks: { title: string; due: string; category: string; recurring?: RecurringPattern }[];
     events: { title: string; datetime: string }[];
     summary: string;
   };
@@ -84,6 +86,8 @@ export type ReportData = {
   entryCount: number; taskCount: number;
   completedTaskCount: number; pendingTaskCount: number; eventCount: number;
   summary?: string;
+  workloadSignal?: 'overload' | 'ok' | 'underload';
+  workloadAdvice?: string;
   // work-only
   highCount?: number; mediumCount?: number; lowCount?: number;
   executiveSummary?: string; insights?: string; risks?: string; recommendations?: string;

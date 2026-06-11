@@ -398,7 +398,7 @@ export default function CalendarScreen() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { paddingHorizontal: 16, paddingTop: 2 },
+  scroll: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 100 },
   header: { marginBottom: 8 },
   subTitle: { fontSize: 13, fontWeight: "500", marginBottom: 2 },
   pageTitle: { fontSize: 26, fontWeight: "800", letterSpacing: -0.5 },

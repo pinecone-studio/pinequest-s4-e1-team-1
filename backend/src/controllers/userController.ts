@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Task from '../models/Task';
 import Entry from '../models/Entry';
 import User from '../models/User';
+import FriendRequest from '../models/FriendRequest';
 
 const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
 
@@ -55,6 +56,7 @@ export const deleteUserData = async (req: Request, res: Response) => {
       Task.deleteMany({ uid: req.uid }),
       Entry.deleteMany({ uid: req.uid }),
       User.deleteOne({ uid: req.uid }),
+      FriendRequest.deleteMany({ $or: [{ fromUid: req.uid }, { toUid: req.uid }] }),
     ]);
     res.json({ success: true });
   } catch (err) {

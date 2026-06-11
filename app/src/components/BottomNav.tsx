@@ -2,12 +2,14 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext';
 
 type Props = { navigation: any };
 
 export default function BottomNav({ navigation }: Props) {
   const { colors: C } = useTheme();
+  const insets = useSafeAreaInsets();
   const route = navigation.getState?.()?.routes?.[navigation.getState?.()?.index]?.name;
 
   const items = [
@@ -19,7 +21,7 @@ export default function BottomNav({ navigation }: Props) {
   ];
 
   return (
-    <View style={[s.nav, { backgroundColor: C.tabBg, borderTopColor: C.tabBorder }]}>
+    <View style={[s.nav, { backgroundColor: C.tabBg, borderTopColor: C.tabBorder, height: 64 + insets.bottom, paddingBottom: insets.bottom }]}>
       {items.map((item) => {
         const isActive = route === item.route;
 
@@ -60,9 +62,8 @@ export default function BottomNav({ navigation }: Props) {
 const s = StyleSheet.create({
   nav: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    height: 80,
     flexDirection: 'row', alignItems: 'center',
-    paddingBottom: 12, paddingHorizontal: 8,
+    paddingHorizontal: 8,
     borderTopWidth: 1,
     shadowColor: '#000', shadowOpacity: 0.06,
     shadowRadius: 12, shadowOffset: { width: 0, height: -3 },
