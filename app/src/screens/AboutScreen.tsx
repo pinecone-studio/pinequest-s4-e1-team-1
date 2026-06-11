@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Feather } from 'expo-vector-icons';
 import { useTheme } from '../theme/ThemeContext';
@@ -15,9 +16,7 @@ export default function AboutScreen() {
   return (
     <ScrollView style={[s.container, { backgroundColor: C.bg }]} contentContainerStyle={s.content}>
       <View style={s.header}>
-        <View style={[s.logo, { backgroundColor: C.accent }]}>
-          <Text style={s.logoText}>V</Text>
-        </View>
+        <Image source={require('../../assets/icon.png')} style={s.logo} />
         <Text style={[s.appName, { color: C.text }]}>MonTask</Text>
         <Text style={[s.version, { color: C.textMuted }]}>v1.0.0</Text>
       </View>
@@ -111,8 +110,7 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   content: { padding: 24, paddingBottom: 32 },
   header: { alignItems: 'center', marginBottom: 32 },
-  logo: { width: 80, height: 80, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  logoText: { fontSize: 32, fontWeight: '700', color: '#fff' },
+  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: 16 },
   appName: { fontSize: 28, fontWeight: '700', marginBottom: 4 },
   version: { fontSize: 14 },
   section: { marginBottom: 28 },

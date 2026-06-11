@@ -56,10 +56,12 @@ export async function transcribeAudio(blob: Blob) {
   return data as { text: string };
 }
 
+export type RecurringPattern = { type: 'monthly_days' | 'weekly_days'; days: number[]; confirmed?: boolean };
+
 export async function processText(text: string) {
   const { data } = await api.post('/api/process', { text });
   return data as {
-    tasks: { title: string; due: string }[];
+    tasks: { title: string; due: string; category: string; recurring?: RecurringPattern }[];
     events: { title: string; datetime: string }[];
     summary: string;
   };
@@ -84,6 +86,8 @@ export type ReportData = {
   entryCount: number; taskCount: number;
   completedTaskCount: number; pendingTaskCount: number; eventCount: number;
   summary?: string;
+  workloadSignal?: 'overload' | 'ok' | 'underload';
+  workloadAdvice?: string;
   // work-only
   highCount?: number; mediumCount?: number; lowCount?: number;
   executiveSummary?: string; insights?: string; risks?: string; recommendations?: string;
@@ -153,4 +157,9 @@ export async function removeFriend(friendUid: string) {
 export async function getFriendCalendar(friendUid: string, month: string) {
   const { data } = await api.get(`/api/friends/${friendUid}/calendar`, { params: { month } });
   return data as Record<string, DayAvailability>;
+}
+
+export async function shareTask(taskId: string, toUid: string) {
+  const { data } = await api.post(`/api/tasks/${taskId}/share`, { toUid });
+  return data as { success: boolean };
 }

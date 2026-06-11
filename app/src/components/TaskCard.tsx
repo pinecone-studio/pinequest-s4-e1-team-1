@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Task } from "../api";
 import {
   PRIO_COLOR,
@@ -9,19 +10,17 @@ import {
 } from "./taskConstants";
 import { useTheme } from "../theme/ThemeContext";
 
-type Props = { task: Task; onToggle: () => void; onDelete: () => void };
+type Props = { task: Task; onToggle: () => void; onDelete: () => void; onEdit?: () => void; onShare?: () => void };
 
-export default function TaskCard({ task, onToggle, onDelete }: Props) {
+export default function TaskCard({ task, onToggle, onDelete, onEdit, onShare }: Props) {
   const { colors: C } = useTheme();
   const done = task.status === "done";
   const pColor = PRIO_COLOR[task.priority ?? "medium"];
   const cat = CATEGORY_PALETTE[task.category] ?? FALLBACK_CAT;
 
   return (
-    <TouchableOpacity
+    <View
       style={[s.card, { backgroundColor: C.surface }]}
-      onLongPress={onDelete}
-      activeOpacity={0.9}
     >
       <View style={[s.accent, { backgroundColor: pColor }]} />
 
@@ -58,7 +57,19 @@ export default function TaskCard({ task, onToggle, onDelete }: Props) {
           )}
         </View>
       </View>
-    </TouchableOpacity>
+
+      <View style={s.actions}>
+        <TouchableOpacity style={s.actionBtn} onPress={onShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="person-add-outline" size={15} color={C.accent} />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.actionBtn} onPress={onEdit} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="pencil-outline" size={15} color={C.textMuted} />
+        </TouchableOpacity>
+        <TouchableOpacity style={s.actionBtn} onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="trash-outline" size={15} color="#f43f5e" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -122,4 +133,6 @@ const s = StyleSheet.create({
     borderRadius: 6,
   },
   dueText: { fontSize: 11, fontWeight: "500" },
+  actions: { flexDirection: "column", gap: 6, marginLeft: 8, alignItems: "center", justifyContent: "center" },
+  actionBtn: { padding: 4 },
 });

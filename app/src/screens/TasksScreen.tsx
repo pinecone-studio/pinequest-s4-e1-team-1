@@ -6,6 +6,9 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,8 +19,11 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  shareTask,
+  getFriends,
   Task,
   TaskPriority,
+  Friend,
 } from "../api";
 import FocusCard from "../components/FocusCard";
 import TabFilter from "../components/TabFilter";
@@ -27,6 +33,32 @@ import { Tab, TODAY } from "../components/taskConstants";
 import { useTheme } from "../theme/ThemeContext";
 
 const CATS_KEY = "task_categories_v1";
+
+const PRIORITY_SCORE: Record<string, number> = { high: 3, medium: 1, low: 0 };
+
+function urgencyScore(due: string | undefined): number {
+  if (!due) return -1;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(due.slice(0, 10)); d.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (diff < 0)   return 5;
+  if (diff === 0) return 4;
+  if (diff === 1) return 3;
+  if (diff <= 7)  return 2;
+  return 1;
+}
+
+function smartSort(tasks: Task[]): Task[] {
+  return [...tasks].sort((a, b) => {
+    const scoreA = urgencyScore(a.due) * 4 + (PRIORITY_SCORE[a.priority] ?? 1);
+    const scoreB = urgencyScore(b.due) * 4 + (PRIORITY_SCORE[b.priority] ?? 1);
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return a.due.localeCompare(b.due);
+  });
+}
 const DEFAULT_CATS = [
   "Хувийн",
   "Ажил",
@@ -63,6 +95,10 @@ export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<Tab>("today");
   const [categories, setCategories] = useState<string[]>(DEFAULT_CATS);
   const [addModal, setAddModal] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [shareTarget, setShareTarget] = useState<Task | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(CATS_KEY).then((v) => {
@@ -103,13 +139,13 @@ export default function TasksScreen() {
 
   const displayTasks = useMemo(
     () => ({
-      today: tasks.filter(
-        (t) => t.status !== "done" && (!t.due || t.due.slice(0, 10) <= TODAY),
+      today: smartSort(
+        tasks.filter((t) => t.status !== "done" && (!t.due || t.due.slice(0, 10) === TODAY)),
       ),
-      upcoming: tasks.filter(
-        (t) => t.status !== "done" && !!t.due && t.due.slice(0, 10) > TODAY,
+      upcoming: smartSort(
+        tasks.filter((t) => t.status !== "done" && !!t.due && t.due.slice(0, 10) > TODAY),
       ),
-      completed: tasks.filter((t) => t.status === "done"),
+      completed: tasks.filter((t) => t.status === "done").reverse(),
     }),
     [tasks],
   );
@@ -156,6 +192,46 @@ export default function TasksScreen() {
     setAddModal(false);
   };
 
+  const handleShareOpen = async (task: Task) => {
+    setShareTarget(task);
+    setFriendsLoading(true);
+    try {
+      setFriends(await getFriends());
+    } catch {
+      setFriends([]);
+    } finally {
+      setFriendsLoading(false);
+    }
+  };
+
+  const handleShareTo = async (friend: Friend) => {
+    if (!shareTarget) return;
+    try {
+      await shareTask(shareTarget._id, friend.uid);
+      setShareTarget(null);
+      Alert.alert('Амжилттай', `"${shareTarget.title}" даалгаврыг ${friend.username}-д илгээлээ`);
+    } catch (e: any) {
+      Alert.alert('Алдаа', e?.response?.data?.error ?? e.message);
+    }
+  };
+
+  const handleUpdate = async (
+    title: string,
+    due: string,
+    priority: TaskPriority,
+    category: string,
+  ) => {
+    if (!editTask) return;
+    const id = editTask._id;
+    setTasks((p) => p.map((t) => t._id === id ? { ...t, title, due, priority, category } : t));
+    setEditTask(null);
+    try {
+      await updateTask(id, { title, due, priority, category });
+    } catch {
+      load();
+    }
+  };
+
   const tabCounts = {
     today: displayTasks.today.length,
     upcoming: displayTasks.upcoming.length,
@@ -191,6 +267,8 @@ export default function TasksScreen() {
           activeTab={activeTab}
           onToggle={toggleComplete}
           onDelete={confirmDelete}
+          onEdit={setEditTask}
+          onShare={handleShareOpen}
         />
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -209,6 +287,39 @@ export default function TasksScreen() {
         onClose={() => setAddModal(false)}
         onSave={handleSave}
       />
+      <AddTaskModal
+        visible={!!editTask}
+        categories={categories}
+        initialTask={editTask ?? undefined}
+        onClose={() => setEditTask(null)}
+        onSave={handleUpdate}
+      />
+
+      <Modal visible={!!shareTarget} transparent animationType="slide" onRequestClose={() => setShareTarget(null)}>
+        <TouchableOpacity style={s.modalOverlay} activeOpacity={1} onPress={() => setShareTarget(null)} />
+        <View style={[s.shareSheet, { backgroundColor: C.surface }]}>
+          <Text style={[s.shareTitle, { color: C.text }]}>Найздаа илгээх</Text>
+          <Text style={[s.shareSubtitle, { color: C.textMuted }]} numberOfLines={1}>"{shareTarget?.title}"</Text>
+          {friendsLoading ? (
+            <ActivityIndicator color={C.accent} style={{ marginTop: 24 }} />
+          ) : friends.length === 0 ? (
+            <Text style={[s.noFriends, { color: C.textMuted }]}>Найз байхгүй байна</Text>
+          ) : (
+            <FlatList
+              data={friends}
+              keyExtractor={f => f.uid}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={[s.friendRow, { borderBottomColor: C.border }]} onPress={() => handleShareTo(item)}>
+                  <View style={[s.avatar, { backgroundColor: C.accentLight }]}>
+                    <Text style={[s.avatarText, { color: C.accent }]}>{item.username[0].toUpperCase()}</Text>
+                  </View>
+                  <Text style={[s.friendName, { color: C.text }]}>{item.username}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -241,4 +352,18 @@ const s = StyleSheet.create({
     elevation: 8,
   },
   fabText: { color: "#fff", fontSize: 28, lineHeight: 32 },
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)' },
+  shareSheet: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40,
+    maxHeight: '60%',
+  },
+  shareTitle: { fontSize: 18, fontWeight: '700', marginBottom: 4 },
+  shareSubtitle: { fontSize: 13, marginBottom: 16 },
+  noFriends: { textAlign: 'center', marginTop: 24, fontSize: 14 },
+  friendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 16, fontWeight: '700' },
+  friendName: { fontSize: 15, fontWeight: '500' },
 });

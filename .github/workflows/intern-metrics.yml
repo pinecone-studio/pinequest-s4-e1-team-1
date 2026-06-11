@@ -2,7 +2,7 @@ name: Intern Metrics → Cloudflare KV
 
 on:
   schedule:
-    - cron: '0 1 * * *' # daily 01:00 UTC
+    - cron: "0 1 * * *" # daily 01:00 UTC
   workflow_dispatch:
 
 permissions:
@@ -16,9 +16,9 @@ concurrency:
 env:
   OWNER: pinecone-studio
   REPO: pinequest-s4-e1-team-1
-  START_DATE: '2026-01-01T00:00:00Z'
-  END_DATE: '2026-12-31T23:59:59Z'
-  KV_KEY: 'pinequest:pinequest-s4-e1-team-1'
+  START_DATE: "2026-01-01T00:00:00Z"
+  END_DATE: "2026-12-31T23:59:59Z"
+  KV_KEY: "pinequest:pinequest-s4-e1-team-1"
 
 jobs:
   metrics:
@@ -28,6 +28,7 @@ jobs:
     steps:
       - name: Setup Node
         uses: actions/setup-node@v4
+
         with:
           node-version: 20
 

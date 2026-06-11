@@ -17,6 +17,7 @@ import SettingsScreen from "./src/screens/SettingsScreen";
 import AboutScreen from "./src/screens/AboutScreen";
 import AccountSettingsScreen from "./src/screens/AccountSettingsScreen";
 import CalendarScreen from "./src/screens/CalendarScreen";
+import FriendsScreen from "./src/screens/FriendsScreen";
 import HelpScreen from "./src/screens/HelpScreen";
 import PrivacySecurityScreen from "./src/screens/PrivacySecurityScreen";
 import ChangePasswordScreen from "./src/screens/ChangePasswordScreen";
@@ -125,14 +126,16 @@ function AppTabs() {
               backgroundColor: colors.tabBg,
               borderTopColor: colors.tabBorder,
               borderTopWidth: 1,
-              paddingBottom: 6,
               paddingTop: 4,
-              height: 68,
             },
             tabBarLabelStyle: {
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: "600",
               marginBottom: 0,
+              letterSpacing: -0.4,
+            },
+            tabBarItemStyle: {
+              paddingHorizontal: 0,
             },
           }}
         >
@@ -186,9 +189,25 @@ function AppTabs() {
             component={ReportScreen}
             options={{
               title: "Тайлан",
+              headerShown: false,
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons
                   name={focused ? "bar-chart" : "bar-chart-outline"}
+                  size={24}
+                  color={color}
+                />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Friends"
+            component={FriendsScreen}
+            options={{
+              title: "Найзууд",
+              headerShown: false,
+              tabBarIcon: ({ color, focused }) => (
+                <Ionicons
+                  name={focused ? "people" : "people-outline"}
                   size={24}
                   color={color}
                 />

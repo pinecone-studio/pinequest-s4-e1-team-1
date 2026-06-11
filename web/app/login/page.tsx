@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Activity } from "lucide-react";
+import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 import { setUsername as apiSetUsername } from "@/lib/api";
 import Link from "next/link";
 
 type Mode = "login" | "signup" | "forgot";
 
-function MagButton({ children, onClick, disabled, className }: any) {
+function MagButton({ children, onClick, disabled, className, style, type }: any) {
   const ref = useRef<HTMLButtonElement>(null);
 
   const onMove = (e: React.MouseEvent) => {
@@ -31,11 +31,13 @@ function MagButton({ children, onClick, disabled, className }: any) {
   return (
     <button
       ref={ref}
+      type={type}
       onClick={onClick}
       disabled={disabled}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
       className={className}
+      style={style}
     >
       {children}
     </button>
@@ -83,6 +85,22 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Алдаа гарлаа.";
       setError(msg.replace("Firebase: ", "").replace(/\s*\(auth\/.*\)/, ""));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDemo = async () => {
+    setError("");
+    setMode("login");
+    setEmail("demo@montask.mn");
+    setPassword("Demo1234!");
+    await new Promise(r => setTimeout(r, 400));
+    setLoading(true);
+    try {
+      await loginWithEmail("demo@montask.mn", "Demo1234!");
+    } catch {
+      setError("Demo акаунт түр боломжгүй байна.");
     } finally {
       setLoading(false);
     }
@@ -157,18 +175,13 @@ export default function LoginPage() {
           Буцах
         </Link>
         <div className="flex items-center gap-2 text-white/50 text-sm">
-          <div
-            className="w-5 h-5 rounded-lg flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
-          >
-            <Activity size={11} color="white" />
-          </div>
+          <Image src="/logo.png" alt="MonTask" width={20} height={20} className="rounded-lg shrink-0" />
           MonTask
         </div>
         <div className="w-16" />
       </div>
 
-      <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-8">
+      <main className="relative z-10 min-h-screen flex items-center justify-center px-4 pt-24">
         <div className="w-full max-w-md">
           <div
             className="text-center mb-10"
@@ -227,6 +240,15 @@ export default function LoginPage() {
                     />
                   </svg>
                   Google-аар {mode === "login" ? "нэвтрэх" : "бүртгүүлэх"}
+                </MagButton>
+
+                <MagButton
+                  onClick={handleDemo}
+                  disabled={loading}
+                  className="button-social flex items-center justify-center gap-3 w-full border border-violet-500/30 hover:border-violet-500/60 hover:bg-violet-500/10 bg-violet-500/5 rounded-2xl px-4 py-3.5 text-sm font-semibold text-violet-300 hover:text-violet-200 transition-all duration-300"
+                >
+                  <span className="text-base">✦</span>
+                  Demo-оор үзэх
                 </MagButton>
 
                 <div className="flex items-center gap-3 my-2">

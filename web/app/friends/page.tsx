@@ -158,6 +158,16 @@ export default function FriendsPage() {
           <Users size={24} className="text-indigo-500" /> Найзууд
         </h1>
 
+        <div className="flex items-start gap-2.5 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-xl px-4 py-3 text-sm text-indigo-700 dark:text-indigo-300">
+          <Users size={15} className="shrink-0 mt-0.5 text-indigo-400" />
+          <p>
+            Найзаа username-ээр хайж нэмээрэй. Найзаа жагсаалтаас сонгохоор тэдний даалгаврын ачааллыг хуанлигаар харах боломжтой —{' '}
+            <span className="font-semibold text-green-600 dark:text-green-400">ногоон</span> сул,{' '}
+            <span className="font-semibold text-amber-500">шар</span> дунд,{' '}
+            <span className="font-semibold text-rose-500">улаан</span> завгүй гэсэн утгатай.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
           {/* Left panel */}
           <div className="flex flex-col gap-4">

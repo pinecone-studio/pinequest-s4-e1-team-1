@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +19,6 @@ import {
   LogOut,
   CalendarDays,
   Mic,
-  Activity,
 } from "lucide-react";
 import { useNotifications, formatTimeLeft } from "@/hooks/useNotifications";
 import { acceptFriendRequest, rejectFriendRequest } from "@/lib/api";
@@ -103,9 +103,7 @@ export default function NavBar() {
       <nav className="bg-white dark:bg-slate-900 border-b border-gray-100 dark:border-slate-800 sticky top-0 z-10 px-5 h-14 grid grid-cols-[auto_1fr_auto] items-center gap-3 transition-colors duration-200">
         {/* Left: logo + record */}
         <div className="flex items-center gap-2.5 shrink-0">
-          <div className="rounded-lg w-7 h-7 flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}>
-            <Activity size={14} color="white" />
-          </div>
+          <Image src="/logo.png" alt="MonTask" width={28} height={28} className="rounded-lg shrink-0" />
           <h1 className="font-medium text-sm text-gray-900 dark:text-white hidden sm:block">
             MonTask
           </h1>
