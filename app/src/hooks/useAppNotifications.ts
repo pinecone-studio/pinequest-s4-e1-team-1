@@ -28,7 +28,7 @@ export function useAppNotifications() {
           });
         }
 
-        const tokenData = await Notifications.getExpoPushTokenAsync();
+        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: '381c5e4a-332f-454b-9e21-772c1502a555' });
         await savePushToken(tokenData.data).catch(() => {});
       } catch {
         // simulator дээр push token байхгүй — silent fail
