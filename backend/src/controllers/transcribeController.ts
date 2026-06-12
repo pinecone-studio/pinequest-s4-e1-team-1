@@ -8,7 +8,11 @@ export const transcribe = async (req: Request, res: Response) => {
       return;
     }
 
-    const audioBuffer = fs.readFileSync(req.file.path);
+    let audioBuffer = fs.readFileSync(req.file.path);
+
+    if (audioBuffer.subarray(0, 4).toString('ascii') === 'RIFF') {
+      audioBuffer = audioBuffer.subarray(44);
+    }
 
     const response = await fetch('https://api.chimege.com/v1.2/transcribe', {
       method: 'POST',
