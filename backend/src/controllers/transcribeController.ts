@@ -11,6 +11,10 @@ export const transcribe = async (req: Request, res: Response) => {
     let audioBuffer = fs.readFileSync(req.file.path);
 
     if (audioBuffer.subarray(0, 4).toString('ascii') === 'RIFF') {
+      const sampleRate = audioBuffer.readUInt32LE(24);
+      const bitsPerSample = audioBuffer.readUInt16LE(34);
+      const channels = audioBuffer.readUInt16LE(22);
+      console.log(`WAV header: ${sampleRate}Hz, ${bitsPerSample}bit, ${channels}ch, totalBytes: ${audioBuffer.length}`);
       let offset = 12;
       while (offset < audioBuffer.length - 8) {
         const chunkId = audioBuffer.subarray(offset, offset + 4).toString('ascii');
