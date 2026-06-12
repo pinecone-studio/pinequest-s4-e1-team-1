@@ -33,7 +33,9 @@ export const transcribe = async (req: Request, res: Response) => {
     fs.unlinkSync(req.file.path);
 
     if (!response.ok) {
-      res.status(response.status).json({ error: 'Chimege API error' });
+      const errBody = await response.text();
+      console.error('Chimege error', response.status, errBody);
+      res.status(response.status).json({ error: `Chimege API error: ${errBody}` });
       return;
     }
 
