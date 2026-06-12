@@ -21,8 +21,7 @@
     "review": {
       "distribution": "store",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://toch-backend-production.up.railway.app",
-        "EXPO_PUBLIC_DEMO_MODE": "true"
+        "EXPO_PUBLIC_API_BASE_URL": "https://toch-backend-production.up.railway.app"
       }
     },
     "production": {
