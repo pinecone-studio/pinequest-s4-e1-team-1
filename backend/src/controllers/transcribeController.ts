@@ -11,7 +11,13 @@ export const transcribe = async (req: Request, res: Response) => {
     let audioBuffer = fs.readFileSync(req.file.path);
 
     if (audioBuffer.subarray(0, 4).toString('ascii') === 'RIFF') {
-      audioBuffer = audioBuffer.subarray(44);
+      let offset = 12;
+      while (offset < audioBuffer.length - 8) {
+        const chunkId = audioBuffer.subarray(offset, offset + 4).toString('ascii');
+        const chunkSize = audioBuffer.readUInt32LE(offset + 4);
+        if (chunkId === 'data') { audioBuffer = audioBuffer.subarray(offset + 8); break; }
+        offset += 8 + chunkSize;
+      }
     }
 
     const response = await fetch('https://api.chimege.com/v1.2/transcribe', {
