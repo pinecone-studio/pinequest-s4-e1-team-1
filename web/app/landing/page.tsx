@@ -8,17 +8,25 @@ import {
   Sparkles,
   BarChart2,
   CheckCircle2,
-  Circle,
   ArrowRight,
   Brain,
   Zap,
   Calendar,
-  Shield,
   Star,
   ChevronRight,
   Rocket,
   Eye,
-  Sun,
+  Sunrise,
+  ListTodo,
+  Clock,
+  UserPlus,
+  Share2,
+  Pencil,
+  Trash2,
+  Bell,
+  LayoutDashboard,
+  CheckSquare,
+  Users,
 } from "lucide-react";
 
 /* ─── Spring cursor ────────────────────────────────────────────────────────── */
@@ -289,39 +297,139 @@ function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
   );
 }
 
-/* ─── App preview ──────────────────────────────────────────────────────────── */
+/* ─── Dashboard data ───────────────────────────────────────────────────────── */
 
-const STATIC = [
-  { title: "Вэбсайтын дизайн сайжруулах", time: "14:00", done: false },
-  { title: "Өглөөний уулзалт", time: "10:30", done: false },
-  { title: "Кодын review хийх", time: "16:45", done: true },
-  { title: "Баланс хэрхэнгүүлэх", time: "13:15", done: false },
+// Always-visible done tasks
+const DONE_TASKS = [
+  {
+    title: "Уулзалтын тэмдэглэл хийх",
+    time: "09:00",
+    priority: "High",
+    category: "Уулзалт",
+  },
+  {
+    title: "Баг руу тайлан илгээх",
+    time: "14:00",
+    priority: "High",
+    category: "Ажил",
+  },
+  {
+    title: "Кодын review хийх",
+    time: "16:00",
+    priority: "Medium",
+    category: "Ажил",
+  },
 ];
-const AI_OUT = [
-  "Вэбсайтын дизайн сайжруулах",
-  "Өглөөний уулзалт",
-  "Кодын review хийх",
+
+// Animated pending tasks — appear then get completed
+const LIVE_TASKS = [
+  {
+    title: "Спринтийн тайлан бичих",
+    time: "18:00",
+    priority: "High",
+    category: "Ажил",
+  },
+  {
+    title: "Дизайн баг руу хариу өгөх",
+    time: "17:00",
+    priority: "Medium",
+    category: "Хувийн",
+  },
+];
+
+const WEEKLY = [22, 30, 18, 36, 14, 24, 52];
+const WEEK_LABELS = ["Бя", "Ня", "Да", "Мя", "Лх", "Пү", "Ба"];
+
+const UPCOMING = [
+  { title: "Дизайн баг руу хариу өгөх", time: "Өнөөдөр 17:00" },
+  { title: "Дизайн хариу өгөх", time: "Баасан 15:00" },
+  { title: "Команд уулзалт", time: "Бямба 09:00" },
+];
+
+const PRIORITY_STYLE: Record<string, string> = {
+  High: "bg-red-950/70 text-red-400",
+  Medium: "bg-yellow-950/70 text-yellow-400",
+  Low: "bg-slate-700/70 text-slate-400",
+};
+const PRIORITY_MN: Record<string, string> = {
+  High: "Өндөр",
+  Medium: "Дунд",
+  Low: "Бага",
+};
+
+/* ─── App preview (dashboard) ──────────────────────────────────────────────── */
+
+const NAV_TABS = [
+  { icon: LayoutDashboard, label: "Хяналт", active: true },
+  { icon: CheckSquare, label: "Даалгавар", active: false },
+  { icon: Calendar, label: "Календарь", active: false },
+  { icon: BarChart2, label: "Тайлан", active: false },
+  { icon: Users, label: "Найзууд", active: false },
 ];
 
 function AppPreview() {
-  const [mic, setMic] = useState(false);
-  const [aiTasks, setAiTasks] = useState<string[]>([]);
+  const [shownLive, setShownLive] = useState(0); // how many LIVE_TASKS visible
+  const [completedLive, setCompletedLive] = useState<Set<number>>(new Set()); // which ones done
 
   useEffect(() => {
+    const tIds: ReturnType<typeof setTimeout>[] = [];
+
     const cycle = () => {
-      setMic(true);
-      setTimeout(() => {
-        setMic(false);
-        setAiTasks(AI_OUT);
-      }, 2400);
-      setTimeout(() => setAiTasks([]), 6800);
+      setShownLive(0);
+      setCompletedLive(new Set());
+
+      // New tasks appear one by one
+      LIVE_TASKS.forEach((_, i) =>
+        tIds.push(setTimeout(() => setShownLive(i + 1), 1800 + i * 1600)),
+      );
+
+      // Then get completed one by one
+      const allShownAt = 1800 + (LIVE_TASKS.length - 1) * 1600 + 1000;
+      LIVE_TASKS.forEach((_, i) =>
+        tIds.push(
+          setTimeout(
+            () => setCompletedLive((prev) => new Set([...prev, i])),
+            allShownAt + i * 1400,
+          ),
+        ),
+      );
     };
-    const id = setInterval(cycle, 8500);
-    return () => clearInterval(id);
+
+    cycle();
+    const CYCLE =
+      1800 +
+      (LIVE_TASKS.length - 1) * 1600 +
+      1000 +
+      LIVE_TASKS.length * 1400 +
+      2500;
+    const id = setInterval(cycle, CYCLE);
+    return () => {
+      clearInterval(id);
+      tIds.forEach(clearTimeout);
+    };
   }, []);
 
+  const visibleTasks = [
+    ...DONE_TASKS.map((t) => ({ ...t, isDone: true, isNew: false })),
+    ...LIVE_TASKS.slice(0, shownLive).map((t, i) => ({
+      ...t,
+      isDone: completedLive.has(i),
+      isNew: true,
+    })),
+  ];
+
+  const total = DONE_TASKS.length + shownLive;
+  const done = DONE_TASKS.length + completedLive.size;
+  const pending = total - done;
+  const rate = total > 0 ? Math.round((done / total) * 100) : 0;
+  const circ = 2 * Math.PI * 19;
+
+  const anim = (delay: number): React.CSSProperties => ({
+    animation: `fup 0.55s cubic-bezier(.22,1,.36,1) ${delay}ms both`,
+  });
+
   return (
-    <Card3D className="relative mt-16 w-full max-w-160 mx-auto">
+    <Card3D className="relative mt-16 w-full max-w-5xl mx-auto text-left">
       <div
         className="absolute -inset-8 rounded-[40px] pointer-events-none"
         style={{
@@ -331,11 +439,18 @@ function AppPreview() {
       />
 
       <div
-        className="relative rounded-3xl overflow-hidden border border-white/[.07]"
-        style={{ background: "rgba(8,6,22,.88)", backdropFilter: "blur(24px)" }}
+        className="relative rounded-3xl overflow-hidden border border-white/6 flex flex-col"
+        style={{
+          background: "rgba(13,15,26,.97)",
+          backdropFilter: "blur(24px)",
+          minHeight: 540,
+        }}
       >
-        {/* window chrome */}
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/5">
+        {/* Window chrome */}
+        <div
+          className="flex items-center gap-2 px-5 py-3 border-b border-white/6 shrink-0"
+          style={{ background: "rgba(17,24,39,.97)" }}
+        >
           <div className="flex gap-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]/80" />
             <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]/80" />
@@ -344,152 +459,485 @@ function AppPreview() {
           <div className="flex-1 flex justify-center">
             <span className="text-[11px] text-white/25 bg-white/4 rounded-full px-4 py-0.5 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              pinequest.app
+              montask.app
             </span>
           </div>
         </div>
 
-        {/* stats bar - Dashboard style */}
-        <div className="grid grid-cols-4 divide-x divide-white/8 border-b border-white/8 backdrop-blur-sm">
-          {[
-            { val: "12", label: "Нийт даалгавар", col: "#a78bfa" },
-            { val: "8", label: "Дүүссэн", col: "#34d399" },
-            { val: "3", label: "Хүлээгдэж буй", col: "#f59e0b" },
-            { val: "87%", label: "Гүйцэтгэл", col: "#f9a8d4" },
-          ].map(({ val, label, col }) => (
-            <div
-              key={label}
-              className="px-4 py-5 group/stat cursor-default transition-all duration-300 hover:bg-white/3"
-            >
-              <div className="text-[10px] text-white/40 font-medium uppercase tracking-wide mb-2">
-                {label}
-              </div>
+        {/* ── NavBar — matches real NavBar dark mode ── */}
+        <nav
+          className="h-13 flex items-center gap-3 px-4 border-b border-white/6 shrink-0"
+          style={{ background: "rgba(17,24,39,.97)", ...anim(0) }}
+        >
+          {/* Left: logo + Бичих */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Image
+              src="/logo.png"
+              alt="MonTask"
+              width={24}
+              height={24}
+              className="rounded-md shrink-0"
+            />
+            <span className="font-bold text-[13px] text-white hidden sm:block">
+              MonTask
+            </span>
+            <div className="h-4 w-px bg-white/10 mx-0.5 hidden sm:block" />
+            <button className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-semibold px-2.5 py-1.5 rounded-full transition-colors shrink-0">
+              <Mic size={10} /> Бичих
+            </button>
+          </div>
+
+          {/* Center: tabs */}
+          <div className="flex-1 flex justify-center items-center gap-0.5">
+            {NAV_TABS.map(({ icon: Icon, label, active }) => (
               <div
-                className="text-2xl font-black transition-transform duration-300 group-hover/stat:scale-110"
-                style={{ color: col, textShadow: `0 0 12px ${col}40` }}
+                key={label}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-medium rounded-full cursor-default transition-colors ${
+                  active
+                    ? "bg-indigo-950/80 text-indigo-400"
+                    : "text-white/35 hover:text-white/60 hover:bg-white/5"
+                }`}
               >
-                {val}
+                <Icon size={12} />
+                <span className="hidden lg:inline">{label}</span>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Header section with greeting */}
-        <div className="px-6 pt-5 pb-3 border-b border-white/8">
-          <div className="text-[14px] font-semibold text-white mb-1 flex items-center gap-1.5">
-            <Sun size={14} className="text-yellow-300" /> Өглөө гов!
-          </div>
-          <div className="text-[12px] text-white/40">
-            Даваа, 6-р сарын 8 • 09:45
-          </div>
-        </div>
-
-        {/* mic + task list */}
-        <div className="p-6 space-y-5">
-          <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-4 py-3.5 border border-white/8 hover:border-white/15 transition-all duration-300">
-            <div className="relative shrink-0 group/mic">
-              {mic && (
-                <>
-                  <div className="ping-ring absolute inset-0 rounded-full bg-pink-500/30" />
-                  <div
-                    className="ping-ring absolute inset-0 rounded-full bg-violet-500/20"
-                    style={{ animationDelay: "500ms" }}
-                  />
-                </>
-              )}
-              <button
-                className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg group-hover/mic:shadow-2xl ${mic ? "scale-110" : "scale-100 group-hover/mic:scale-105"}`}
-                style={{
-                  background: mic
-                    ? "linear-gradient(135deg,#db2777,#f59e0b)"
-                    : "linear-gradient(135deg,#7c3aed,#db2777)",
-                  boxShadow: mic
-                    ? "0 0 30px rgba(219,39,119,.4)"
-                    : "0 0 20px rgba(124,58,237,.3)",
-                }}
-              >
-                <Mic size={19} color="white" />
-              </button>
-            </div>
-
-            <div className="flex-1">
-              <div className="text-[13px] font-semibold text-white/85">
-                {mic ? "Бичиж байна..." : "Дарж ярьж эхэл"}
-              </div>
-              <div className="text-[11px] text-white/35 mt-0.5">
-                AI автоматаар боловсруулна
-              </div>
-            </div>
-
-            {mic && (
-              <div className="flex items-end gap-1 h-7">
-                {[4, 7, 5, 9, 3, 8, 5, 6, 4, 7].map((h, i) => (
-                  <div
-                    key={i}
-                    className="wave-bar w-1 rounded-full bg-linear-to-t from-violet-400 to-pink-400"
-                    style={{ height: h * 2.5, animationDelay: `${i * 60}ms` }}
-                  />
-                ))}
-              </div>
-            )}
+            ))}
           </div>
 
-          {/* Tasks section header */}
-          <div className="flex items-center justify-between mt-2">
-            <div className="text-[13px] font-semibold text-white/90">
-              Өнөөдрийн даалгаврууд
+          {/* Right: Bell + avatar */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white/35 hover:text-white/65 hover:bg-white/5 cursor-default transition-colors">
+              <Bell size={14} />
             </div>
-            <div className="text-[11px] text-white/30">
-              {aiTasks.length > 0
-                ? `${aiTasks.length} даалгавар`
-                : `${STATIC.length} даалгавар`}
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+              style={{ background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
+            >
+              С
             </div>
           </div>
+        </nav>
 
-          <div className="space-y-2 mt-3">
-            {aiTasks.length > 0
-              ? aiTasks.map((t, i) => (
-                  <div
-                    key={t}
-                    className="task-appear flex items-center gap-3 px-4 py-3 rounded-xl border border-violet-500/30 bg-violet-500/8 hover:bg-violet-500/12 transition-all duration-300 group/task cursor-default"
-                    style={{ animationDelay: `${i * 110}ms` }}
-                  >
-                    <div className="w-4 h-4 rounded-full border-2 border-violet-400/60 flex items-center justify-center shrink-0 group-hover/task:border-violet-400 transition-colors">
-                      <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+        {/* ── Content ── */}
+        <div className="flex-1 p-3 flex flex-col gap-2.5 overflow-y-auto">
+          <div className="flex flex-col gap-2.5">
+            {/* Greeting banner */}
+            <div
+              className="rounded-xl px-4 py-3 flex items-center justify-between shrink-0"
+              style={{
+                background:
+                  "linear-gradient(135deg,#3730a3 0%,#4f46e5 50%,#6d28d9 100%)",
+                ...anim(80),
+              }}
+            >
+              <div>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Sunrise size={13} style={{ color: "#fcd34d" }} />
+                  <span className="text-[13px] font-black text-white">
+                    Өглөөний мэнд!
+                  </span>
+                </div>
+                <p className="text-[10px] text-white/55">
+                  Баасан, 6-р сарын 12 · 09:14
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="text-center rounded-lg px-3 py-1.5"
+                  style={{ background: "rgba(255,255,255,.15)" }}
+                >
+                  <div className="text-base font-black text-white leading-none">
+                    {done}
+                  </div>
+                  <div className="text-[8px] text-white/55 mt-0.5">
+                    Дуусгасан
+                  </div>
+                </div>
+                <button
+                  className="rounded-lg px-2.5 py-1.5 text-[10px] font-bold text-white"
+                  style={{ background: "rgba(255,255,255,.2)" }}
+                >
+                  + Нэмэх
+                </button>
+              </div>
+            </div>
+
+            {/* Focus bar */}
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/6"
+              style={{
+                background: "rgba(26,32,53,.95)",
+                borderLeft: "2px solid #7c3aed",
+                ...anim(120),
+              }}
+            >
+              <Sparkles
+                size={10}
+                style={{ color: "#a78bfa" }}
+                className="shrink-0"
+              />
+              <span className="text-[8px] font-black text-violet-400 uppercase tracking-wider shrink-0">
+                Фокус
+              </span>
+              <span className="text-[10px] font-semibold text-white/75 truncate">
+                {LIVE_TASKS.find((_, i) => !completedLive.has(i))?.title ??
+                  LIVE_TASKS[0].title}
+              </span>
+            </div>
+
+            {/* Stats 4 cols */}
+            <div className="grid grid-cols-4 gap-1.5" style={anim(160)}>
+              {[
+                {
+                  icon: ListTodo,
+                  bg: "rgba(99,102,241,.15)",
+                  col: "#818cf8",
+                  val: total,
+                  label: "Нийт",
+                  bar: "linear-gradient(90deg,#6366f1,#7c3aed)",
+                  pct: 100,
+                },
+                {
+                  icon: CheckCircle2,
+                  bg: "rgba(34,197,94,.12)",
+                  col: "#4ade80",
+                  val: done,
+                  label: "Дууссан",
+                  bar: "linear-gradient(90deg,#22c55e,#10b981)",
+                  pct: total ? (done / total) * 100 : 0,
+                },
+                {
+                  icon: Clock,
+                  bg: "rgba(245,158,11,.12)",
+                  col: "#fbbf24",
+                  val: pending,
+                  label: "Хүлээгдэж",
+                  bar: "linear-gradient(90deg,#f59e0b,#ef4444)",
+                  pct: total ? (pending / total) * 100 : 0,
+                },
+              ].map(({ icon: Icon, bg, col, val, label, bar, pct }) => (
+                <div
+                  key={label}
+                  className="rounded-lg p-2 border border-white/6 flex flex-col gap-1.5"
+                  style={{ background: "rgba(26,32,53,.95)" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <div
+                      className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: bg }}
+                    >
+                      <Icon size={10} style={{ color: col }} />
                     </div>
-                    <span className="text-[13px] text-white/70 group-hover/task:text-white/90 transition-colors font-medium flex-1">
-                      {t}
+                    <div>
+                      <p className="text-sm font-black text-white leading-none transition-all duration-500">
+                        {val}
+                      </p>
+                      <p className="text-[8px] text-white/35">{label}</p>
+                    </div>
+                  </div>
+                  <div
+                    className="h-0.5 rounded-full"
+                    style={{ background: "rgba(255,255,255,.08)" }}
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%`, background: bar }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <div
+                className="rounded-lg p-2 border border-white/6 flex items-center gap-1.5"
+                style={{ background: "rgba(26,32,53,.95)" }}
+              >
+                <div className="relative w-9 h-9 shrink-0">
+                  <svg className="w-9 h-9 -rotate-90" viewBox="0 0 48 48">
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="19"
+                      fill="none"
+                      strokeWidth="4"
+                      stroke="rgba(139,92,246,.15)"
+                    />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="19"
+                      fill="none"
+                      strokeWidth="4"
+                      strokeDasharray={`${(rate / 100) * circ} ${circ}`}
+                      strokeLinecap="round"
+                      stroke="#a855f7"
+                      className="transition-all duration-700"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span
+                      className="text-[9px] font-black"
+                      style={{ color: "#a855f7" }}
+                    >
+                      {rate}%
                     </span>
                   </div>
-                ))
-              : STATIC.map(({ title, time, done }) => (
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-white/80">
+                    Гүйцэтгэл
+                  </p>
+                  <p className="text-[8px] text-white/35">
+                    {done}/{total}
+                  </p>
+                  <span className="text-[8px] font-bold text-emerald-400">
+                    ● Сайн
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>{/* /greeting+focus+stats */}
+
+          {/* Tasks · Weekly · Upcoming · AI — нэг flex мөр */}
+          <div className="flex gap-2.5 flex-1 min-h-0">
+
+            {/* Task list */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5" style={anim(210)}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <p className="text-[11px] font-bold text-white/85">
+                    Өнөөдрийн даалгаврууд
+                  </p>
+                  <p className="text-[9px] text-white/30">
+                    {done}/{total} гүйцэтгэсэн
+                  </p>
+                </div>
+                <div className="flex items-center gap-1">
+                  {shownLive > 0 && (
+                    <span
+                      className="task-appear text-[8px] font-semibold px-1.5 py-0.5 rounded"
+                      style={{
+                        background: "rgba(124,58,237,.18)",
+                        color: "#a78bfa",
+                      }}
+                    >
+                      +{shownLive}
+                    </span>
+                  )}
+                  <span
+                    className="text-[8px] font-semibold px-1.5 py-0.5 rounded"
+                    style={{
+                      background: "rgba(99,102,241,.15)",
+                      color: "#818cf8",
+                    }}
+                  >
+                    {pending} хийгдэх
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                {visibleTasks.map((task, idx) => (
+                  <div
+                    key={task.title + idx}
+                    className={`flex items-center gap-2 px-2.5 py-2 rounded-lg border transition-all duration-500 ${task.isNew ? "task-appear" : ""}`}
+                    style={{
+                      background: task.isDone
+                        ? "rgba(20,26,45,.8)"
+                        : "rgba(26,32,53,.95)",
+                      borderColor: task.isDone
+                        ? "rgba(255,255,255,.04)"
+                        : task.isNew
+                          ? "rgba(124,58,237,.25)"
+                          : "rgba(255,255,255,.07)",
+                    }}
+                  >
+                    <div
+                      className={`w-3.5 h-3.5 rounded-full border shrink-0 flex items-center justify-center transition-all duration-400 ${
+                        task.isDone
+                          ? "border-emerald-500 bg-emerald-500"
+                          : task.isNew
+                            ? "border-violet-500/60"
+                            : "border-white/20"
+                      }`}
+                      style={
+                        task.isDone
+                          ? { boxShadow: "0 0 6px rgba(52,211,153,.4)" }
+                          : undefined
+                      }
+                    >
+                      {task.isDone && (
+                        <CheckCircle2 size={9} className="text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={`text-[10px] font-semibold truncate transition-all duration-400 ${
+                          task.isDone
+                            ? "line-through text-white/25"
+                            : task.isNew
+                              ? "text-white/90"
+                              : "text-white/80"
+                        }`}
+                      >
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="flex items-center gap-0.5 text-[8px] text-white/30 shrink-0">
+                          <Clock size={7} />
+                          {task.time}
+                        </span>
+                        <span
+                          className="text-[8px] px-1 py-0.5 rounded-full shrink-0"
+                          style={{
+                            background: "rgba(99,102,241,.12)",
+                            color: "#818cf8",
+                          }}
+                        >
+                          {task.category}
+                        </span>
+                        <span
+                          className={`text-[8px] font-bold px-1 py-0.5 rounded-full shrink-0 ${PRIORITY_STYLE[task.priority]}`}
+                        >
+                          {PRIORITY_MN[task.priority]}
+                        </span>
+                      </div>
+                    </div>
+                    {!task.isDone && (
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          className="w-4 h-4 rounded flex items-center justify-center text-white/25 hover:text-violet-400"
+                          style={{ background: "rgba(255,255,255,.04)" }}
+                        >
+                          <Pencil size={8} />
+                        </button>
+                        <button
+                          className="w-4 h-4 rounded flex items-center justify-center text-white/25 hover:text-red-400"
+                          style={{ background: "rgba(255,255,255,.04)" }}
+                        >
+                          <Trash2 size={8} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Weekly · Upcoming · AI ── */}
+            <div className="flex flex-col gap-2.5 w-40 shrink-0" style={anim(250)}>
+            {/* Weekly bar chart */}
+            <div
+              className="rounded-xl p-2.5 border border-white/6"
+              style={{ background: "rgba(26,32,53,.95)" }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold text-white/70 flex items-center gap-1">
+                  <BarChart2 size={11} style={{ color: "#818cf8" }} /> 7
+                  хоногийн идэвх
+                </span>
+                <span className="text-[8px]" style={{ color: "#818cf8" }}>
+                  энэ 7 хоног
+                </span>
+              </div>
+              <div className="flex items-end gap-1 h-11">
+                {WEEKLY.map((h, i) => {
+                  const isToday = i === 6;
+                  return (
+                    <div
+                      key={i}
+                      className="flex flex-col items-center gap-0.5 flex-1"
+                    >
+                      <div
+                        className="w-full rounded-t-sm"
+                        style={{
+                          height: `${(h / 52) * 100}%`,
+                          background: isToday
+                            ? "linear-gradient(to top,#7c3aed,#818cf8)"
+                            : "rgba(99,102,241,.25)",
+                          minHeight: 2,
+                        }}
+                      />
+                      <span
+                        className="text-[7px]"
+                        style={{
+                          color: isToday ? "#818cf8" : "rgba(255,255,255,.2)",
+                        }}
+                      >
+                        {WEEK_LABELS[i]}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Upcoming */}
+            <div
+              className="rounded-xl p-2.5 border border-white/6"
+              style={{ background: "rgba(26,32,53,.95)" }}
+            >
+              <div className="flex items-center gap-1 mb-2">
+                <Calendar size={11} style={{ color: "#818cf8" }} />
+                <span className="text-[10px] font-bold text-white/70">
+                  Дараагийн
+                </span>
+              </div>
+              <div className="flex flex-col">
+                {UPCOMING.map(({ title, time }, i) => (
                   <div
                     key={title}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/8 hover:border-white/15 transition-all duration-300 group/task cursor-default"
+                    className="flex items-start gap-1.5 py-1.5 border-b border-white/4 last:border-0 last:pb-0"
                   >
-                    {done ? (
-                      <CheckCircle2
-                        size={16}
-                        className="text-emerald-400 shrink-0 group-hover/task:text-emerald-300 transition-colors"
-                      />
-                    ) : (
-                      <Circle
-                        size={16}
-                        className="text-white/30 shrink-0 group-hover/task:text-white/40 transition-colors"
-                      />
-                    )}
-                    <span
-                      className={`flex-1 text-[13px] transition-all duration-300 ${done ? "line-through text-white/25 group-hover/task:text-white/35" : "text-white/60 group-hover/task:text-white/75"}`}
+                    <div
+                      className="w-3 h-3 rounded-sm flex items-center justify-center text-[7px] font-bold shrink-0 mt-0.5"
+                      style={{
+                        background: "rgba(124,58,237,.2)",
+                        color: "#a78bfa",
+                      }}
                     >
-                      {title}
-                    </span>
-                    <span className="text-[11px] text-white/25 shrink-0 group-hover/task:text-white/35 transition-colors">
-                      {time}
-                    </span>
+                      {i + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] text-white/65 font-medium truncate">
+                        {title}
+                      </p>
+                      <p className="text-[8px] text-white/28 flex items-center gap-0.5 mt-0.5">
+                        <Clock size={6} />
+                        {time}
+                      </p>
+                    </div>
                   </div>
                 ))}
-          </div>
-        </div>
+              </div>
+            </div>
+
+            {/* AI санал */}
+            <div
+              className="rounded-xl p-2.5 border border-violet-500/20 flex-1"
+              style={{ background: "rgba(124,58,237,.08)" }}
+            >
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div
+                  className="w-4 h-4 rounded flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(124,58,237,.25)" }}
+                >
+                  <Sparkles size={9} style={{ color: "#a78bfa" }} />
+                </div>
+                <span className="text-[9px] font-black text-violet-400 uppercase tracking-wider">
+                  AI санал
+                </span>
+              </div>
+              <p className="text-[9px] text-white/45 leading-relaxed">
+                Өнөөдөр{" "}
+                <span className="text-violet-300 font-semibold">{rate}%</span>{" "}
+                гүйцэтгэлтэй.{" "}
+                {pending > 0
+                  ? `${pending} даалгавар хүлээж байна.`
+                  : "Бүх даалгавар дууссан!"}
+              </p>
+            </div>
+          </div>{/* /weekly+upcoming+AI column */}
+          </div>{/* /flex row: tasks+weekly+upcoming+AI */}
+        </div>{/* /outer content */}
       </div>
     </Card3D>
   );
@@ -600,7 +1048,6 @@ export default function LandingPage() {
       const isScrollingDown = currentScrollY > lastScrollYRef.current;
       const scrollDelta = Math.abs(currentScrollY - lastScrollYRef.current);
 
-      // Show/hide header based on scroll direction (with minimum scroll delta to avoid flickering)
       if (currentScrollY > 60 && scrollDelta > 2) {
         setHeaderVisible(!isScrollingDown);
       } else if (currentScrollY <= 60) {
@@ -651,7 +1098,6 @@ export default function LandingPage() {
         <div className="aurora-layer aurora-3" />
         <div className="aurora-layer aurora-4" />
 
-        {/* dot grid */}
         <div
           className="absolute inset-0"
           style={{
@@ -664,7 +1110,6 @@ export default function LandingPage() {
           }}
         />
 
-        {/* noise */}
         <svg
           className="absolute inset-0 w-full h-full opacity-[.04]"
           aria-hidden
@@ -681,7 +1126,6 @@ export default function LandingPage() {
           <rect width="100%" height="100%" filter="url(#noise)" />
         </svg>
 
-        {/* vignette */}
         <div
           className="absolute inset-0"
           style={{
@@ -691,7 +1135,7 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* ── Nav ─ Apple Style ───────────────────────────────────────── */}
+      {/* ── Nav ─────────────────────────────────────────────────────── */}
       <header
         className={`fixed top-0 inset-x-0 z-50 flex items-center justify-center px-4 sm:px-6 h-16 transition-colors duration-300 ${
           scrolled
@@ -705,20 +1149,23 @@ export default function LandingPage() {
           willChange: "transform",
         }}
       >
-        {/* Max width container for Apple-like design */}
         <div className="w-full max-w-6xl px-4 sm:px-8 flex items-center justify-between">
-          {/* Logo */}
           <Link
             href="#"
             className="flex items-center gap-2 shrink-0 group/logo"
           >
-            <Image src="/logo.png" alt="MonTask" width={32} height={32} className="rounded-lg shrink-0 transition-all duration-300" />
+            <Image
+              src="/logo.png"
+              alt="MonTask"
+              width={32}
+              height={32}
+              className="rounded-lg shrink-0 transition-all duration-300"
+            />
             <span className="font-black text-[16px] tracking-tight text-white hidden sm:inline">
               MonTask
             </span>
           </Link>
 
-          {/* Center Navigation - Apple Style */}
           <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 transform -translate-x-1/2">
             {[
               { label: "Онцлог", href: "#features" },
@@ -739,7 +1186,6 @@ export default function LandingPage() {
             ))}
           </nav>
 
-          {/* Right Side - CTA */}
           <div className="flex items-center gap-3 shrink-0">
             <Link
               href="/login"
@@ -775,7 +1221,6 @@ export default function LandingPage() {
           ref={heroRef}
           className="flex flex-col items-center text-center px-6 pt-28 pb-4"
         >
-          {/* Premium badge */}
           <div
             className={`inline-flex items-center gap-2 text-[11px] font-semibold border border-violet-500/30 bg-violet-500/15 text-violet-300 rounded-full px-4 py-1.5 mb-8 backdrop-blur-sm transition-all duration-700 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
@@ -783,39 +1228,43 @@ export default function LandingPage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
               <span className="relative rounded-full h-2 w-2 bg-violet-400" />
             </span>
-            <Sparkles size={11} /> AI-тай бүтээмжтэй ажиллах шинэ арга
+            <Sparkles size={11} /> AI-тай бүтээмжтэй ажиллах шинэ боломж
           </div>
 
-          {/* Main heading with gradient effect */}
           <h1
             className={`text-[clamp(2.8rem,8vw,5.6rem)] font-black leading-[1.02] tracking-tight mb-8 transition-all duration-700 delay-75 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"}`}
           >
-            <span className="block text-white drop-shadow-lg">
+            <span
+              style={{ display: "block" }}
+              className="text-white drop-shadow-lg"
+            >
               <ScrambleText text="Ярьж тэмдэглэ." visible={heroVis} />
             </span>
             <span
-              className="block gradient-text drop-shadow-lg"
               style={{
+                display: "block",
                 textShadow:
                   "0 0 30px rgba(124,58,237,.3), 0 0 60px rgba(219,39,119,.2)",
               }}
+              className="gradient-text drop-shadow-lg"
             >
               <ScrambleText text="AI бүгдийг" visible={heroVis} />
             </span>
-            <span className="block text-white drop-shadow-lg">
+            <span
+              style={{ display: "block" }}
+              className="text-white drop-shadow-lg"
+            >
               <ScrambleText text="зохион байгуулна." visible={heroVis} />
             </span>
           </h1>
 
-          {/* Subtitle with enhanced styling */}
           <p
             className={`text-[17px] text-white/45 max-w-115 leading-relaxed mb-12 transition-all duration-700 delay-150 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
             Дуут бичлэгийг өгөхөд даалгавар, хуваарь, тайлан автоматаар үүснэ.
-            <br className="hidden sm:block" /> Гар бичгийн хэрэг байхгүй.
+            <br className="hidden sm:block" /> Гараар бичэх шаардлагагүй.
           </p>
 
-          {/* CTA Buttons */}
           <div
             className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-700 delay-220 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           >
@@ -826,13 +1275,12 @@ export default function LandingPage() {
                 className="group-hover:translate-x-1 transition-transform"
               />
             </MagBtn>
-            <MagBtn href="#features" outline>
+            <MagBtn href="#preview" outline>
               <Eye size={15} /> Жишээ үзэх
               <ChevronRight size={14} className="opacity-50" />
             </MagBtn>
           </div>
 
-          {/* User testimonial section */}
           <div
             className={`flex flex-col items-center gap-4 mt-12 transition-all duration-700 delay-300 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}
           >
@@ -866,7 +1314,8 @@ export default function LandingPage() {
           </div>
 
           <div
-            className={`w-full max-w-160 transition-all duration-1000 delay-500 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
+            id="preview"
+            className={`w-full max-w-5xl transition-all duration-1000 delay-500 ${heroVis ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
           >
             <AppPreview />
           </div>
@@ -910,7 +1359,7 @@ export default function LandingPage() {
               Хэрэгтэй бүх зүйл <span className="gradient-text">нэг дор</span>
             </h2>
             <p className="text-[15px] text-white/30 max-w-sm mx-auto">
-              Цаг хугацаа хэмнэж, бүтээмжийг нэмэгдүүл
+              Цаг хугацаагаа хэмнэж, бүтээмжээ нэмэгдүүл
             </p>
           </FadeUp>
 
@@ -920,38 +1369,38 @@ export default function LandingPage() {
                 {
                   Icon: Mic,
                   title: "Дуут бичлэг",
-                  desc: "Байгалийн хэлээр ярь. AI нэр, огноо, чухал байдлыг ялган таньдаг.",
+                  desc: "Монгол хэлээр ярьж даалгавраа нэм. AI нэр, огноо, чухал байдлыг ялган таньдаг.",
                   col: "#7c3aed",
                 },
                 {
                   Icon: Brain,
                   title: "AI боловсруулалт",
-                  desc: "Ярианаас даалгавар, хуваарь шууд үүсгэнэ. GPT-4 хүч чадал.",
+                  desc: "Ярианаас даалгавар, хуваарь шууд үүсгэнэ. Гараар бичэх шаардлагагүй.",
                   col: "#db2777",
                 },
                 {
                   Icon: Calendar,
                   title: "Ухаалаг хуваарь",
-                  desc: "Давтагдах үйл явдал, автомат сануулга, цагийн мэдрэмжтэй.",
+                  desc: "Хугацаа, чухал байдал, ангилалаар эрэмбэлэгдсэн хуваарь автоматаар үүснэ.",
                   col: "#0ea5e9",
                 },
                 {
                   Icon: BarChart2,
                   title: "Гүнзгий шинжилгээ",
-                  desc: "Өдөр, 7 хоног, сарын тайлан. Ажлын болон хувийн амжилт.",
+                  desc: "Өдөр, 7 хоног, сарын тайлан. AI зөвлөмжтэй гүйцэтгэлийн дүн шинжилгээ.",
                   col: "#10b981",
                 },
                 {
-                  Icon: Zap,
-                  title: "Шуурхай үйлдэл",
-                  desc: "Дуу бичиж дуусмагц 3 секундэд даалгавар үүснэ. Цаг алдахгүй.",
-                  col: "#f59e0b",
+                  Icon: UserPlus,
+                  title: "Найз урих",
+                  desc: "Хэрэглэгч хайж найзаа нэм. Найзынхаа хуваарийг харж хамтдаа төлөвлө.",
+                  col: "#8b5cf6",
                 },
                 {
-                  Icon: Shield,
-                  title: "Бүрэн хамгаалалт",
-                  desc: "End-to-end шифрлэлт. Хэн ч таны өгөгдөлд хандах боломжгүй.",
-                  col: "#ec4899",
+                  Icon: Share2,
+                  title: "Даалгавар хуваалцах",
+                  desc: "Даалгавраа найздаа шууд илгээ. Хамтарсан ажлыг хялбархан зохицуул.",
+                  col: "#06b6d4",
                 },
               ] as const
             ).map(({ Icon, title, desc, col }, i) => (
@@ -1164,7 +1613,13 @@ export default function LandingPage() {
       {/* ── Footer ────────────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-white/4 px-8 py-7 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Image src="/logo.png" alt="MonTask" width={24} height={24} className="rounded-lg shrink-0" />
+          <Image
+            src="/logo.png"
+            alt="MonTask"
+            width={24}
+            height={24}
+            className="rounded-lg shrink-0"
+          />
           <span className="text-[13px] font-black text-white/38">MonTask</span>
         </div>
         <p className="text-[11px] text-white/18">
